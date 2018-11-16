@@ -1,0 +1,77 @@
+﻿@{
+    Layout = "_Layout";
+    Html.AddBodyCssClass("home");
+}
+<link href="~/Content/flickity.css" rel="stylesheet" />
+<script src="~/Scripts/flickity.pkgd.js"></script>
+<style>
+    .slide{
+        width: 100%;
+        height: auto;
+    }
+</style>
+<script>
+    $('.carousel').flickity();
+    $('.carousel').flickity({
+        accessibility: true,
+        autoPlay: false,
+        cellAlign: 'center',
+        cellSelector: undefined,
+        contain: false,
+        draggable: true,
+        friction: 0.2,
+        imagesLoaded: false,
+        initialIndex: 0,
+        percentPosition: true,
+        prevNextButtons: true,
+        pageDots: true,
+        resizeBound: true,
+        watchCSS: false,
+        wrapAround: false
+    });
+
+</script>
+<div class="page home-page">
+    <div id="slider" class="js-flickity" data-flickity-options='{}'>
+        @foreach (var item in ViewBag.Banners)
+        {
+            <div class="carousel">
+                <div class="slide">
+                   <img src="/admin/store/BannerPicture?url=@item.URL" width="1100" height="600" />
+                </div>
+            </div>
+        }
+    </div>
+    @{
+        Html.RenderWidget("home_page_top");
+
+        Html.RenderAction("TopicBlock", "Topic", new { systemName = "HomePageText", isLead = true });
+        Html.RenderWidget("home_page_after_intro");
+
+        Html.RenderAction("HomepageCategories", "Catalog");
+        Html.RenderWidget("home_page_after_categories");
+
+        Html.RenderAction("HomepageProducts", "Catalog");
+        Html.RenderWidget("home_page_after_products");
+
+        Html.RenderAction("HomepageBestSellers", "Catalog");
+        Html.RenderWidget("home_page_after_bestsellers");
+
+        Html.RenderAction("HomepageManufacturers", "Catalog");
+        Html.RenderWidget("home_page_after_manufacturers");
+
+        Html.RenderAction("PopularProductTags", "Catalog", new { area = "" });
+        Html.RenderWidget("home_page_after_tags");
+
+        //Html.RenderAction("HomePageNews", "News");
+        //Html.RenderWidget("home_page_after_news");
+
+        Html.RenderAction("HomePagePolls", "Poll");
+        Html.RenderWidget("home_page_after_polls");
+
+        @* TODO: (mc) find more intelligent way of rendering RecentlyViewedProductsBlock globally *@
+        Html.RenderAction("RecentlyViewedProductsBlock", "Catalog", new { area = "" });
+
+        Html.RenderWidget("home_page_bottom");
+    }
+</div>

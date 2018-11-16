@@ -1,0 +1,4 @@
+﻿@using SmartStore.Admin.Models.Common;
+@model BankUpdateRequestModel
+@Html.ControlGroupFor(model => model.BankName, required: true, breakpoint: "lg")
+@Html.ControlGroupFor(model => model.IBAN, required: true, breakpoint: "lg")

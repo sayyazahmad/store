@@ -1,0 +1,25 @@
+﻿@model SmartStore.Admin.Models.Membership.MembershipPlanModel
+
+@{
+    ViewBag.Title = T("Admin.MembershipPlans.AddNew").Text;
+}
+@using (Html.BeginForm())
+{
+    <div class="section-header">
+        <div class="title">
+            @T("Admin.MembershipPlans.AddNew")
+            <a href='@Url.Action("List")'>(@T("Admin.MembershipPlans.BackToList"))</a>
+        </div>
+        <div class="options">
+            <button type="submit" name="save" value="save" class="btn btn-primary">
+                <i class="fa fa-check"></i>
+                <span>@T("Admin.Common.Save")</span>
+            </button>
+            <button type="submit" name="save" value="save-continue" class="btn btn-secondary">
+                <span>@T("Admin.Common.SaveContinue")</span>
+            </button>
+        </div>
+    </div>
+
+    Html.RenderPartial("_CreateOrUpdate", Model);
+}

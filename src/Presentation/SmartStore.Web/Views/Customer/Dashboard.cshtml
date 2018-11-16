@@ -1,0 +1,48 @@
+﻿@model SmartStore.Admin.Models.Agent.DashboardModel
+@{
+    Html.AddTitleParts(T("PageTitle.Account").Text);
+    Layout = "_MyAccount";
+    ViewBag.PageTitle = T("Account.Dashboard").Text;
+}
+<div class="card-deck card-cols-sm-1 card-cols-lg-4">
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.LastLogin)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.LastLogin</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.TotalSales)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.TotalSales</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.TotalPoints)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.TotalPoints</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    @*<div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.LastLogin)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.LastLogin</label>
+                </div>
+            </div>
+        </div>
+    </div>*@
+</div>

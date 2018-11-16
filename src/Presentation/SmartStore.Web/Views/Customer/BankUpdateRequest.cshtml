@@ -1,0 +1,52 @@
+﻿@model IEnumerable<BankUpdateRequestModel>
+@using SmartStore.Admin.Models.Common;
+@{
+    Html.AddTitleParts(T("PageTitle.Account").Text);
+    Layout = "_MyAccount";
+    ViewBag.PageClassToken = "info";
+    ViewBag.PageTitle = T("Account.BankUpdateRequest").Text;
+}
+@if (Model.Count() == 0)
+{
+    <div class="alert alert-warning">@T("Account.BankUpdateRequest.NewRequest")</div>
+}
+<div class="add-address">
+    <a class="btn btn-primary btn-lg add-address-button mb-4" href="@Url.Action("BankUpdateRequestAdd")" rel="nofollow">
+        <i class="fa fa-plus"></i>
+        <span>@T("Common.AddNew")</span>
+    </a>
+</div>
+<div class="card-deck card-cols-sm-1 card-cols-lg-2">
+    @foreach (var item in Model)
+    {
+        <div class="card card-shadow order-item">
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4 font-weight-400 text-muted">@T("Account.BankUpdateRequest.BankName")</dt>
+                    <dd class="col-sm-8">@item.BankName</dd>
+                    <dt class="col-sm-4 font-weight-400 text-muted">@T("Account.BankUpdateRequest.IBAN")</dt>
+                    <dd class="col-sm-8">@item.IBAN</dd>
+                    <dt class="col-sm-4 font-weight-400 text-muted">@T("Account.BankUpdateRequest.Status")</dt>
+                    <dd class="col-sm-8 price">@item.RequestStatus.ToString()</dd>
+                    <dt class="col-sm-4 font-weight-400 text-muted">@T("Account.BankUpdateRequest.RequestDate")</dt>
+                    <dd class="col-sm-8 price">@item.CreatedOnUtc</dd>
+                </dl>
+            </div>
+            <div class="card-footer d-flex p-0">
+                <a class="btn btn-danger btn-flat rounded-0" href="@Url.Action("BankUpdateRequestDelete", new { id = item.Id })" rel="nofollow" id="deletebtn" >
+                    <i class="fa fa-trash-o"></i>
+                    <span>Delete</span>
+                </a>
+            </div>
+        </div>
+    }
+</div>
+<script>
+    $('#deletebtn').click(function () {
+        if (confirm('Are you sure?')) {
+            return true;
+        }
+        else
+            return false;
+    });
+</script>

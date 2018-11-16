@@ -1,0 +1,42 @@
+﻿@model IEnumerable<SmartStore.Admin.Models.Common.BankUpdateRequestModel>
+@using Telerik.Web.Mvc.UI;
+@using System.Globalization;
+@{
+    var gridPageSize = EngineContext.Current.Resolve<SmartStore.Core.Domain.Common.AdminAreaSettings>().GridPageSize;
+    ViewBag.Title = T("Admin.Customers.BankUpdateRequest").Text;
+}
+<div class="section-header">
+    <div class="title">
+        <i class="fa fa-user"></i>
+        @T("Admin.Customers.BankUpdateRequest")
+    </div>
+</div>
+@(Html.Telerik().Grid<BankUpdateRequestModel>(Model)
+                        .Name("requests-grid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(x => x.CustomerName)
+                                .Template(x => Html.ActionLink(x.CustomerName, "Edit", "Customer", new { id = x.CustomerId }, new { }));
+                            columns.Bound(x => x.CurrentBankName);
+                            columns.Bound(x => x.CurrentIBAN);
+                            columns.Bound(x => x.BankName);
+                            columns.Bound(x => x.IBAN);
+                            columns.Bound(x => x.CreatedOnUtc);
+                            columns.Bound(x => x.Status);
+                            columns.Bound(x => x.Id)
+                                .Centered()
+                                .Template(x => x.RequestStatusId == 10 ? Html.ActionLink(T("Admin.Common.Approve").Text, "ApproveBankUpdateRequest", new { id = x.Id }, new { @class = "btn btn-success" }) : MvcHtmlString.Create(""))
+                                .ClientTemplate("<a href=\"Edit/<#= Id #>\" class=\"t-button\">" + T("Admin.Common.Edit").Text + "</a>")
+                                .Title(String.Empty)
+                                .HtmlAttributes(new { @class = "omega", style = "width:2%" });
+                            columns.Bound(x => x.Id)
+                               .Centered()
+                               .Template(x => x.RequestStatusId == 10 ? Html.ActionLink(T("Admin.Common.Reject").Text, "RejectBankUpdateRequest", new { id = x.Id }, new { @class = "btn btn-danger" }) : MvcHtmlString.Create(""))
+                               .ClientTemplate("<a href=\"Edit/<#= Id #>\" class=\"t-button\">" + T("Admin.Common.Edit").Text + "</a>")
+                               .Title(String.Empty)
+                               .HtmlAttributes(new { @class = "omega", style="width:2%" });
+                        })
+                        //.Pageable(settings => settings.Total(Model.Customers.Total).PageSize(gridPageSize).Position(GridPagerPosition.Both))
+                        //.DataBinding(dataBinding => dataBinding.Ajax().Select("CustomerList", "Customer"))
+                        .PreserveGridState()
+                        .EnableCustomBinding(true))
