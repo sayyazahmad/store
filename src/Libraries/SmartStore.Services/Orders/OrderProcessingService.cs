@@ -1169,7 +1169,6 @@ namespace SmartStore.Services.Orders
                                             UpdatedOnUtc = DateTime.UtcNow
                                         };
                                         _comissionService.InsertComission(comission);
-
                                     }
                                 }
 

@@ -351,12 +351,6 @@ namespace SmartStore.Core.Domain.Customers
             get { return _customerMemberships ?? (_customerMemberships = new HashSet<CustomerMembership>()); }
             protected set { _customerMemberships = value; }
         }
-
-        [DataMember]
-        /// <summary>
-        /// Gets or sets customer earch point
-        /// </summary>
-        public decimal EearnedPoint { get; set; }
         #endregion
 
         #region Utils
