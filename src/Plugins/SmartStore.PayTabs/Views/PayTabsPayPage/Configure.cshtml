@@ -1,0 +1,80 @@
+﻿@using SmartStore.PayTabs.Models;
+@using SmartStore.Web.Framework;
+@model PayTabsPayPageConfigurationModel
+@{
+    Layout = "";
+}
+
+<div class="plugin-actions">
+    <button type="submit" name="save" class="btn btn-warning" value="save">
+        <i class="fa fa-check"></i>
+        <span>@T("Admin.Common.Save")</span>
+    </button>
+</div>
+@*<div class="plugin-configuration">
+    <div>
+        <div class="alert alert-info alert-dismissible">
+            @Html.Raw(T("Plugins.Payments.PayPalStandard.AdminInstruction"))
+            <button class="close" data-dismiss="alert">&times;</button>
+        </div>
+    </div>
+    <div>
+        <a href="https://www.paytabs.com/" target="_blank">
+            <img src="@Url.Content("~/Plugins/SmartStore.PayPal/Content/branding.png")" alt="PayPal" />
+        </a>
+    </div>
+</div>*@
+@{ Html.RenderAction("StoreScopeConfiguration", "Setting", new { area = "Admin" }); }
+@using (Html.BeginForm())
+{
+    <table class="adminContent configure-paypal-standard">
+        <tr>
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.StoreUrl)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.StoreUrl)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.Currencey)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.Currencey)
+            </td>
+        </tr>
+        <tr id="PdtValidateOnlyWarnContainer">
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.MerchantEmail)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.MerchantEmail)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.APIKey)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.APIKey)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.PayPageAPIUrl)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.PayPageAPIUrl)
+            </td>
+        </tr>
+        <tr>
+            <td class="adminTitle">
+                @Html.SmartLabelFor(model => model.PaytabsVerifyPaymentAPIUrl)
+            </td>
+            <td class="adminData">
+                @Html.SettingEditorFor(model => model.PaytabsVerifyPaymentAPIUrl)
+            </td>
+        </tr>
+    </table>
+}

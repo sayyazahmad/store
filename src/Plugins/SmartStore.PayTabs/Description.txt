@@ -1,0 +1,11 @@
+﻿FriendlyName: PayTabs
+Description: Provides the PayTabs payment methods PayTabs PayPage
+SystemName: SmartStore.PayTabs
+Group: Payment
+Version: 3.1.5.2
+MinAppVersion: 3.1.5
+DisplayOrder: 1
+Author: syz
+FileName: SmartStore.PayTabs.dll
+ResourceRootKey: Plugins.SmartStore.PayTabs
+Url: 
