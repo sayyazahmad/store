@@ -29,7 +29,6 @@ namespace SmartStore.PayTabs.Settings
     {
         public string MerchantEmail { get; set; }
         public string APIKey { get; set; }
-        public string Currency { get; set; }
         public string StoreUrl { get; set; }
         public string PayPageAPIUrl { get; set; }
         public string PaytabsVerifyPaymentAPIUrl { get; set; }

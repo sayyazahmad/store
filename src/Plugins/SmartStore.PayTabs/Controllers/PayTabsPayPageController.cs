@@ -95,21 +95,45 @@ namespace SmartStore.PayTabs.Controllers
             dynamic data = JObject.Parse(res);
             if (data.response_code == "100")
             {
-                string refno = data.reference_no;
-
-                //var fee = GetCurrentDueFee(refno.TrimEnd('-'));
-                //var feeid = feeHandler.AddFee(fee);
-                //if (feeid > 0)
-                //{
-                //    this.AddNotification(NotificationManager.GetLocalizedMessage("PaymentSuccess"), NotificationType.Success);
-                //    return RedirectToAction("FeeInvoice", new { id = feeid });
-                //}
-                //else
-                //    ViewBag.Message = "Transaction successfull, however somthing went wrong setteling fee invoice. Please contact system admin.";
+                Guid orderNo = Guid.Empty;
+                try
+                {
+                    orderNo = new Guid(data.reference_no);
+                }
+                catch { }
+                var order = OrderService.GetOrderByGuid(orderNo);
+                if(order != null)
+                {
+                    if (order.AuthorizationTransactionId.IsEmpty())
+                    {
+                        order.AuthorizationTransactionId = order.CaptureTransactionId = data.transaction_id;
+                        order.AuthorizationTransactionResult = order.CaptureTransactionResult = "Success";
+                        OrderService.UpdateOrder(order);
+                    }
+                    if (OrderProcessingService.CanMarkOrderAsPaid(order))
+                    {
+                        OrderProcessingService.MarkOrderAsPaid(order);
+                    }
+                }
+                return RedirectToAction("Completed", "Checkout", new { area = "" });
             }
             else
-                ViewBag.Message = data.result;
-            return View();
+            {
+                try
+                {
+                    Guid orderNo = Guid.Empty;
+                    try
+                    {
+                        orderNo = new Guid((string) data.reference_no);
+                    }
+                    catch { }
+                    var order = OrderService.GetOrderByGuid(orderNo);
+                    NotifyError((string) data.result);
+                    return RedirectToAction("Details", "Order", new { id = order.Id, area = "" });
+                }
+                catch {}
+            }
+            return RedirectToAction("Completed", "Checkout", new { area = "" });
         }
 
         private string CreateWebRequest(string url, string request)
@@ -152,14 +176,12 @@ namespace SmartStore.PayTabs.Controllers
             var request = $"merchant_email={settings.MerchantEmail}"
                         + $"&secret_key={settings.APIKey}"
                         + $"&payment_reference={referenceId}";
-            return CreateWebRequest(ConfigurationManager.AppSettings["PaytabsVerifyPaymentAPIUrl"], request);
+            return CreateWebRequest(settings.PaytabsVerifyPaymentAPIUrl, request);
         }
 
         [ValidateInput(false)]
         public ActionResult VerifyPaymentt(FormCollection form)
         {
-
-
             Dictionary<string, string> values;
             var tx = Services.WebHelper.QueryString<string>("tx");
             var utcNow = DateTime.UtcNow;

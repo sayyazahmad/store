@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -65,11 +66,10 @@ namespace SmartStore.PayTabs
 
             var settings = _services.Settings.LoadSetting<PayTabsPayPagePaymentSettings>(processPaymentRequest.StoreId);
 
-            if (settings.MerchantEmail.IsEmpty() || settings.APIKey.IsEmpty())
+            if (settings.MerchantEmail.IsEmpty() || settings.APIKey.IsEmpty() || settings.PayPageAPIUrl.IsEmpty() || settings.PaytabsVerifyPaymentAPIUrl.IsEmpty())
             {
-                result.AddError(T("Plugins.Payments.PayTabsPayPage.InvalidCredentials"));
+                result.AddError(T("Plugins.Payments.PayTabsPayPage.APINotConfigured"));
             }
-
             return result;
         }
 
@@ -89,8 +89,10 @@ namespace SmartStore.PayTabs
             var builder = new StringBuilder();
             builder.Append($"merchant_email={settings.MerchantEmail}");
             builder.Append($"&secret_key={settings.APIKey}");
-            builder.Append($"&currency={store.PrimaryStoreCurrency.CurrencyCode}");
+            //builder.Append($"&currency={store.PrimaryStoreCurrency.CurrencyCode}");
+            builder.Append($"&currency=SAR");
             builder.Append($"&amount={postProcessPaymentRequest.Order.OrderTotal}");
+            builder.Append($"&site_url={settings.StoreUrl}");
             builder.Append($"&title={store.Name} Payment");
             builder.Append($"&quantity={postProcessPaymentRequest.Order.OrderItems.Sum(x => x.Quantity)}");
             builder.Append($"&unit_price={postProcessPaymentRequest.Order.OrderTotal}");
@@ -102,25 +104,22 @@ namespace SmartStore.PayTabs
             builder.Append($"&phone_number=00000");
             builder.Append($"&billing_address={postProcessPaymentRequest.Order.BillingAddress.Address1} {postProcessPaymentRequest.Order.BillingAddress.Address2}");
             builder.Append($"&city={postProcessPaymentRequest.Order.BillingAddress.City}");
-            builder.Append($"&state={postProcessPaymentRequest.Order.BillingAddress.StateProvince}");
-            builder.Append($"&postal_code={postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode}");
+            builder.Append($"&state=ST");
+            builder.Append($"&postal_code={postProcessPaymentRequest.Order.BillingAddress.ZipPostalCode ?? "00"}");
             builder.Append($"&country=SAU");
             builder.Append($"&email={postProcessPaymentRequest.Order.Customer.Email}");
             builder.Append($"&ip_customer=000");
             builder.Append($"&ip_merchant={GetIPAddress()}");
             builder.Append($"&address_shipping={postProcessPaymentRequest.Order.ShippingAddress.Address1} {postProcessPaymentRequest.Order.ShippingAddress.Address2}");
             builder.Append($"&city_shipping={postProcessPaymentRequest.Order.ShippingAddress.City}");
-            builder.Append($"&state_shipping={postProcessPaymentRequest.Order.ShippingAddress.StateProvince}");
-            builder.Append($"&postal_code_shipping={postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode}");
-            builder.Append($"&postal_code_shipping={postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode}");
+            builder.Append($"&state_shipping=ST");
+            builder.Append($"&postal_code_shipping={postProcessPaymentRequest.Order.ShippingAddress.ZipPostalCode ?? ""}");
             builder.Append($"&country_shipping=SAU");
             builder.Append($"&other_charges=0");
             builder.Append($"&discount=0");
             builder.Append($"&&reference_no={postProcessPaymentRequest.Order.OrderGuid}");
             builder.Append($"&msg_lang=English");
             builder.Append($"&cms_with_version=API");
-            
-            
 
             var res = CreateWebRequest(settings.PayPageAPIUrl, builder.ToString());
             if (res.Contains("WebException"))

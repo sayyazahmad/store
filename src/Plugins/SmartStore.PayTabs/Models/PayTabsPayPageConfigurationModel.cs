@@ -23,10 +23,8 @@ namespace SmartStore.PayTabs.Models
 				MiniMapper.Map(this, settings);
 				settings.MerchantEmail = MerchantEmail.TrimSafe();
                 settings.APIKey = APIKey.TrimSafe();
-                settings.Currency = Currencey.TrimSafe();
                 settings.StoreUrl = StoreUrl.TrimSafe();
                 settings.PayPageAPIUrl = PayPageAPIUrl.TrimSafe();
-                settings.Currency = Currencey.TrimSafe();
                 settings.PaytabsVerifyPaymentAPIUrl = PaytabsVerifyPaymentAPIUrl.TrimSafe();
 			}
         }
