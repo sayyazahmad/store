@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
+using Newtonsoft.Json.Linq;
 using SmartStore.Admin.Models.Agent;
 using SmartStore.Admin.Models.Common;
 using SmartStore.Collections;
@@ -18,6 +21,7 @@ using SmartStore.Core.Domain.Messages;
 using SmartStore.Core.Domain.Orders;
 using SmartStore.Core.Domain.Tax;
 using SmartStore.Core.Logging;
+using SmartStore.PayTabs.Settings;
 using SmartStore.Services;
 using SmartStore.Services.Agent;
 using SmartStore.Services.Authentication;
@@ -660,7 +664,7 @@ namespace SmartStore.Web.Controllers
                     customer.IsAgent = model.IsAgent;
                     customer.BankName = model.BankName;
                     customer.IBAN = model.IBAN;
-                    customer.MembershipPlanId = _membershipPlanService.GetAll().FirstOrDefault(p => p.IsDefault)?.Id ?? 0;
+                    customer.MembershipPlanId = int.Parse(model.MembershipPlan); //_membershipPlanService.GetAll().FirstOrDefault(p => p.IsDefault)?.Id ?? 0;
                     customer.StoreName = model.StoreName;
                     //customer.StoreLogo = model.StoreLogo;
 
@@ -777,19 +781,27 @@ namespace SmartStore.Web.Controllers
                     {
                         plan = _membershipPlanService.GetMembershipById(int.Parse(model.MembershipPlan));
                     }
-                    if(plan != null && plan.Fee > 0)
+                    if (plan != null && plan.Fee > 0)
                     {
-                        //payment
-                        customer.Active = false;
+                        var response = PayTabsPayPagaeRegistrationFeePayment(customer, plan.Fee);
+                        Uri uriResult;
+                        bool result = Uri.TryCreate(response, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+                        if (result)
+                            return Redirect(response);
+                        else
+                        {
+                            ModelState.AddModelError("", response);
+                            return View(model);
+                        }
                     }
-					_customerService.UpdateCustomer(customer);
+                    _customerService.UpdateCustomer(customer);
                     if(model.StoreLogo != null)
                     {
                         UploadLogo(model.StoreLogo, customer.Id);
                     }
-
-					// Notifications
-					if (_customerSettings.NotifyNewCustomerRegistration)
+                    
+                    // Notifications
+                    if (_customerSettings.NotifyNewCustomerRegistration)
                         Services.MessageFactory.SendCustomerRegisteredNotificationMessage(customer, _localizationSettings.DefaultAdminLanguageId);
                     
                     switch (_customerSettings.UserRegistrationType)
@@ -887,6 +899,132 @@ namespace SmartStore.Web.Controllers
             }
 
             return View(model);
+        }
+
+        [ValidateInput(false)]
+        public ActionResult VerifyPayment(FormCollection form)
+        {
+            var res = Verify(Request["payment_reference"]);
+            dynamic data = JObject.Parse(res);
+            if (data.response_code == "100")
+            {
+                return RedirectToAction("Dashboard");
+            }
+            else
+            {
+                ModelState.AddModelError("", (string) data.result);
+                return RedirectToAction("Register");
+            }
+        }
+
+        private string PayTabsPayPagaeRegistrationFeePayment(Customer customer, decimal fee)
+        {
+            var store = _services.StoreService.GetStoreById(_storeContext.CurrentStore.Id);
+            var settings = Services.Settings.LoadSetting<PayTabsPayPagePaymentSettings>();
+            var returnUrl = _webHelper.GetStoreLocation(store.SslEnabled) + "/VerifyPayment";
+
+            var builder = new StringBuilder();
+            builder.Append($"merchant_email={settings.MerchantEmail}");
+            builder.Append($"&secret_key={settings.APIKey}");
+            //builder.Append($"&currency={store.PrimaryStoreCurrency.CurrencyCode}");
+            builder.Append($"&currency=SAR");
+            builder.Append($"&amount={fee}");
+            builder.Append($"&site_url={settings.StoreUrl}");
+            builder.Append($"&title={store.Name} Payment");
+            builder.Append($"&quantity=1");
+            builder.Append($"&unit_price={fee}");
+            builder.Append($"&products_per_title={store.Name} Registration Fee Payment");
+            builder.Append($"&return_url={returnUrl}");
+            builder.Append($"&cc_first_name={customer.FirstName ?? "fname"}");
+            builder.Append($"&cc_last_name={customer.LastName?? "lname"}");
+            builder.Append($"&cc_phone_number=00000");
+            builder.Append($"&phone_number=00000");
+            builder.Append($"&billing_address={customer.BillingAddress?.Address1} {customer.BillingAddress?.Address2 ?? "aa"}");
+            builder.Append($"&city={customer.BillingAddress?.City ?? "city"}");
+            builder.Append($"&state=ST");
+            builder.Append($"&postal_code={customer.BillingAddress?.ZipPostalCode ?? "00"}");
+            builder.Append($"&country=SAU");
+            builder.Append($"&email={customer.Email}");
+            builder.Append($"&ip_customer=000");
+            builder.Append($"&ip_merchant={GetIPAddress()}");
+            builder.Append($"&address_shipping={customer.ShippingAddress?.Address1} {customer.ShippingAddress?.Address2 ?? "bb"}");
+            builder.Append($"&city_shipping={customer.ShippingAddress?.City ?? "city"}");
+            builder.Append($"&state_shipping=ST");
+            builder.Append($"&postal_code_shipping={customer.ShippingAddress?.ZipPostalCode ?? ""}");
+            builder.Append($"&country_shipping=SAU");
+            builder.Append($"&other_charges=0");
+            builder.Append($"&discount=0");
+            builder.Append($"&&reference_no={customer.Id}");
+            builder.Append($"&msg_lang=English");
+            builder.Append($"&cms_with_version=API");
+
+            var res = CreateWebRequest(settings.PayPageAPIUrl, builder.ToString());
+            if (res.Contains("WebException"))
+            {
+                return "Could not create SSL/TLS secure channel";
+            }
+            else
+            {
+                dynamic data = JObject.Parse(res);
+                if (data.response_code == "4012")
+                {
+                    return (string) data.payment_url;
+                }
+                else
+                {
+                    return (string) data.result;
+                }
+            }
+        }
+
+        private string CreateWebRequest(string url, string request)
+        {
+            HttpWebRequest req;
+            byte[] byteArray;
+            WebResponse response;
+            StreamReader reader;
+            Stream dataStream;
+            string res;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12 | SecurityProtocolType.Ssl3;
+            try
+            {
+                req = (HttpWebRequest)WebRequest.Create(url);
+                req.Method = "POST";
+                byteArray = Encoding.UTF8.GetBytes(request);
+                req.ContentType = "application/x-www-form-urlencoded";
+                req.ContentLength = byteArray.Length;
+                dataStream = req.GetRequestStream();
+                dataStream.Write(byteArray, 0, byteArray.Length);
+                dataStream.Close();
+                response = req.GetResponse();
+                dataStream = response.GetResponseStream();
+                reader = new StreamReader(dataStream);
+                res = HttpUtility.UrlDecode(reader.ReadToEnd());
+                reader.Close();
+                dataStream.Close();
+                response.Close();
+                return res;
+            }
+            catch (WebException ex)
+            {
+                return ex.ToString();
+            }
+        }
+
+        private string Verify(string referenceId)
+        {
+            var settings = Services.Settings.LoadSetting<PayTabsPayPagePaymentSettings>();
+            var request = $"merchant_email={settings.MerchantEmail}"
+                        + $"&secret_key={settings.APIKey}"
+                        + $"&payment_reference={referenceId}";
+            return CreateWebRequest(settings.PaytabsVerifyPaymentAPIUrl, request);
+        }
+
+        private string GetIPAddress()
+        {
+            IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+            IPAddress ipAddress = ipHostInfo.AddressList[1];
+            return ipAddress.ToString();
         }
 
         public ActionResult RegisterResult(int resultId)
