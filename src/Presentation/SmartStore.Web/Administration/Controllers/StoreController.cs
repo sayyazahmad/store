@@ -278,17 +278,6 @@ namespace SmartStore.Admin.Controllers
             return View();
         }
         
-        public ActionResult BannerPicture(string url)
-        {
-            if (!string.IsNullOrEmpty(url))
-            {
-                string path = Path.Combine(Server.MapPath("~/content/images"), url);
-                if(System.IO.File.Exists(path))
-                    return File(path, "image/jpeg");
-            }
-            return null;
-        }
-
         private string UploadImage(HttpPostedFileBase image)
         {
             string ext = Path.GetExtension(image.FileName);

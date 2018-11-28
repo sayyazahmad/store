@@ -18,6 +18,7 @@ using SmartStore.Web.Framework.Controllers;
 using SmartStore.Web.Framework.Security;
 using SmartStore.Web.Models.Common;
 using SmartStore.Web.Framework.Filters;
+using System.IO;
 
 namespace SmartStore.Web.Controllers
 {
@@ -165,5 +166,16 @@ namespace SmartStore.Web.Controllers
 		{
             return RedirectPermanent(Services.StoreContext.CurrentStore.Url);
 		}
+
+        public ActionResult BannerPicture(string url)
+        {
+            if (!string.IsNullOrEmpty(url))
+            {
+                string path = Path.Combine(Server.MapPath("~/content/images"), url);
+                if (System.IO.File.Exists(path))
+                    return File(path, "image/jpeg");
+            }
+            return null;
+        }
     }
 }
