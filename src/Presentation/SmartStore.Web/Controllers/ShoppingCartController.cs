@@ -1414,6 +1414,7 @@ namespace SmartStore.Web.Controllers
         public ActionResult AddProduct(int productId, int shoppingCartTypeId, ProductVariantQuery query, FormCollection form)
         {
             var product = _productService.GetProductById(productId);
+            
             if (product == null)
             {
                 return Json(new
@@ -1424,6 +1425,7 @@ namespace SmartStore.Web.Controllers
 
             #region Customer entered price
             decimal customerEnteredPriceConverted = decimal.Zero;
+            decimal currentPrice = decimal.Zero;
             if (product.CustomerEntersPrice || _workContext.CurrentCustomer.IsAgent)
             {
                 foreach (string formKey in form.AllKeys)
@@ -1435,6 +1437,10 @@ namespace SmartStore.Web.Controllers
                             customerEnteredPriceConverted = _currencyService.ConvertToPrimaryStoreCurrency(customerEnteredPrice, _workContext.WorkingCurrency);
                         break;
                     }
+                }
+                if (form["current-price"] != null)
+                {
+                    decimal.TryParse(form["current-price"], out currentPrice);
                 }
             }
             #endregion
@@ -1462,7 +1468,8 @@ namespace SmartStore.Web.Controllers
 				CartType = cartType,
 				CustomerEnteredPrice = customerEnteredPriceConverted,
 				Quantity = quantity,
-				AddRequiredProducts = true
+				AddRequiredProducts = true,
+                CurrentPrice = currentPrice
 			};
 
 			_shoppingCartService.AddToCart(addToCartContext);

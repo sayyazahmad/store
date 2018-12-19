@@ -1,0 +1,45 @@
+﻿@model IEnumerable<CommissionRequestModel>
+@using Telerik.Web.Mvc.UI;
+@using System.Globalization;
+@using SmartStore.Admin.Models.Agent;
+@{
+    var gridPageSize = EngineContext.Current.Resolve<SmartStore.Core.Domain.Common.AdminAreaSettings>().GridPageSize;
+    ViewBag.Title = T("Admin.Customers.CommissionRequest").Text;
+}
+<div class="section-header">
+    <div class="title">
+        <i class="fa fa-user"></i>
+        @T("Admin.Customers.CommissionRequest")
+    </div>
+</div>
+@(Html.Telerik().Grid<CommissionRequestModel>(Model)
+                        .Name("requests-grid")
+                        .Columns(columns =>
+                        {
+                            columns.Bound(x => x.CustomerName)
+                                .Template(x => Html.ActionLink(x.CustomerName, "Edit", "Customer", new { id = x.CustomerId }, new { }));
+                            columns.Bound(x => x.TotalCommission);
+                            columns.Bound(x => x.AvailableCommission);
+                            columns.Bound(x => x.TotalProfit);
+                            columns.Bound(x => x.AvailableProfit);
+                            columns.Bound(x => x.CommissionWithdrawAmount);
+                            columns.Bound(x => x.ProfitWithdrawAmount);
+                            columns.Bound(x => x.CreatedOnUtc);
+                            columns.Bound(x => x.Status);
+                            columns.Bound(x => x.Id)
+                                .Centered()
+                                .Template(x => x.RequestStatusId == 10 ? Html.ActionLink(T("Admin.Common.Approve").Text, "ApproveCommissionRequest", new { id = x.Id }, new { @class = "btn btn-success" }) : MvcHtmlString.Create(""))
+                                .ClientTemplate("<a href=\"Edit/<#= Id #>\" class=\"t-button\">" + T("Admin.Common.Edit").Text + "</a>")
+                                .Title(String.Empty)
+                                .HtmlAttributes(new { @class = "omega", style = "width:2%" });
+                            columns.Bound(x => x.Id)
+                                .Centered()
+                                .Template(x => x.RequestStatusId == 10 ? Html.ActionLink(T("Admin.Common.Reject").Text, "RejectCommissionRequest", new { id = x.Id }, new { @class = "btn btn-danger" }) : MvcHtmlString.Create(""))
+                                .ClientTemplate("<a href=\"Edit/<#= Id #>\" class=\"t-button\">" + T("Admin.Common.Edit").Text + "</a>")
+                                .Title(String.Empty)
+                                .HtmlAttributes(new { @class = "omega", style = "width:2%" });
+                        })
+                        //.Pageable(settings => settings.Total(Model.Customers.Total).PageSize(gridPageSize).Position(GridPagerPosition.Both))
+                        //.DataBinding(dataBinding => dataBinding.Ajax().Select("CustomerList", "Customer"))
+                        .PreserveGridState()
+                        .EnableCustomBinding(true))

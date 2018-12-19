@@ -20,6 +20,9 @@ namespace SmartStore.Core.Domain.Orders
         public decimal ComissionAmt { get; set; }
 
         [DataMember]
+        public decimal ProfitAmt { get; set; }
+
+        [DataMember]
         public decimal Point { get; set; }
 
         [DataMember]

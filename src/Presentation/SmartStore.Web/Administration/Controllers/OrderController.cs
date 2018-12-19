@@ -1103,6 +1103,27 @@ namespace SmartStore.Admin.Controllers
 		}
 
         [HttpPost, ActionName("Edit")]
+        [FormValueRequired("dispatchorder")]
+        public ActionResult DispatchOrder(int id)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManageOrders))
+                return AccessDeniedView();
+
+            var order = _orderService.GetOrderById(id);
+            if (order == null)
+                return RedirectToAction("List");
+            try
+            {
+                _orderProcessingService.DispatchOrder(order);
+            }
+            catch (Exception exc)
+            {
+                NotifyError(exc);
+            }
+            return RedirectToAction("Edit", new { id });
+        }
+
+        [HttpPost, ActionName("Edit")]
         [FormValueRequired("captureorder")]
         public ActionResult CaptureOrder(int id)
         {

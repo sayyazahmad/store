@@ -1,1 +1,0 @@
-﻿This folder contains tests for SmartStore.Admin project (admin area)

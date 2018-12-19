@@ -1020,5 +1020,13 @@ namespace SmartStore.Admin
         }
 
         #endregion
+
+        #region Comission
+        //public static ComissionViewModel ToModel(this Comission entity)
+        //{
+        //    return Mapper.Map<Comission, ComissionViewModel>(entity);
+        //}
+
+        #endregion
     }
 }

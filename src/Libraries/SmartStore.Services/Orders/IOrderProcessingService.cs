@@ -119,6 +119,11 @@ namespace SmartStore.Services.Orders
 		/// <param name="order">Order</param>
 		void CompleteOrder(Order order);
 
+        /// <summary>
+		/// Marks the order as dispatched
+		/// </summary>
+		/// <param name="order">Order</param>
+		void DispatchOrder(Order order);
 
         /// <summary>
         /// Gets a value indicating whether capture from admin panel is allowed

@@ -1,0 +1,50 @@
+﻿@using SmartStore.Admin.Models.Agent;
+@model CommissionRequestModel
+<div class="form-group row">
+    <label class="col-lg-3 col-form-label" for="TotalCommission">@Html.DisplayNameFor(m => m.TotalCommission)</label>
+    <div class="col-lg-9">
+        <label class="col-form-label">@Model.TotalCommission.ToString("0.00")</label>
+    </div>
+</div>
+<div class="form-group row">
+    <label class="col-lg-3 col-form-label" for="TotalCommission">@Html.DisplayNameFor(m => m.TotalProfit)</label>
+    <div class="col-lg-9">
+        <label class="col-form-label">@Model.TotalProfit.ToString("0.00")</label>
+    </div>
+</div>
+<div class="form-group row">
+    <label class="col-lg-3 col-form-label" for="TotalCommission">@Html.DisplayNameFor(m => m.AvailableCommission)</label>
+    <div class="col-lg-9">
+        <input type="number" step="any" id="CommissionWithdrawAmount" name="CommissionWithdrawAmount" max="@Model.AvailableCommission" class="form-control" value="@Model.AvailableCommission.ToString("0.00")" />
+    </div>
+</div>
+<div class="form-group row">
+    <label class="col-lg-3 col-form-label" for="TotalCommission">@Html.DisplayNameFor(m => m.AvailableProfit)</label>
+    <div class="col-lg-9">
+        <input type="number" step="any" id="ProfitWithdrawAmount" name="ProfitWithdrawAmount" max="@Model.AvailableProfit" class="form-control" value="@Model.AvailableProfit.ToString("0.00")" />
+    </div>
+</div>
+<div class="form-group row">
+    <label class="col-lg-3 col-form-label" for="TotalCommission">@Html.DisplayNameFor(m => m.TotalWithdrawAmount)</label>
+    <div class="col-lg-9">
+        <label class="col-form-label" id="totalAmount"></label>
+    </div>
+</div>
+@Html.ControlGroupFor(model => model.Note, required: false, breakpoint: "lg")
+<input type="hidden" value="@Model.AvailableCommission" name="AvailableCommissionOrg" />
+<input type="hidden" value="@Model.AvailableProfit" name="AvailableProfitOrg" />
+<script type="text/javascript">
+    $(document).ready(function () {
+        function sumup() {
+            var com = $('#CommissionWithdrawAmount').val();
+            var prof = $('#ProfitWithdrawAmount').val();
+            var sum = parseFloat(com) + parseFloat(prof);
+            $('#totalAmount').html(sum);
+        }
+        sumup();
+
+        $(':input[type="number"]').on('blur', function () {
+            sumup();
+        });
+    });
+</script>

@@ -361,7 +361,7 @@ namespace SmartStore.Services.Orders
             Product product, 
 			string selectedAttributes, 
 			decimal customerEnteredPrice, 
-			int quantity)
+			int quantity, decimal currentPrice = 0)
         {
 			Guard.NotNull(customer, nameof(customer));
 			Guard.NotNull(product, nameof(product));
@@ -427,18 +427,12 @@ namespace SmartStore.Services.Orders
             // customer entered price
             if (product.CustomerEntersPrice || customer.IsAgent)
             {
-                if (customer.IsAgent)
+                if (customer.IsAgent && currentPrice > 0)
                 {
-                    if (customerEnteredPrice < product.Price ||
-                        customerEnteredPrice > product.Price * 2)
+                    if (customerEnteredPrice < currentPrice)
                     {
-                        var minimumCustomerEnteredPrice = _currencyService.ConvertFromPrimaryStoreCurrency(product.Price, _workContext.WorkingCurrency);
-                        var maximumCustomerEnteredPrice = _currencyService.ConvertFromPrimaryStoreCurrency(product.Price * 2, _workContext.WorkingCurrency);
-
-                        warnings.Add(T("ShoppingCart.CustomerEnteredPrice.RangeError",
-                            _priceFormatter.FormatPrice(minimumCustomerEnteredPrice, true, false),
-                            _priceFormatter.FormatPrice(maximumCustomerEnteredPrice, true, false))
-                        );
+                        var minimumCustomerEnteredPrice = _currencyService.ConvertFromPrimaryStoreCurrency(currentPrice, _workContext.WorkingCurrency);
+                        warnings.Add(T("ShoppingCart.CustomerEnteredPrice.RangeError", _priceFormatter.FormatPrice(minimumCustomerEnteredPrice, true, false)));
                     }
                 }
                 else
@@ -842,7 +836,7 @@ namespace SmartStore.Services.Orders
 			bool getRequiredProductWarnings = true,
 			bool getBundleWarnings = true, 
 			ProductBundleItem bundleItem = null, 
-			IList<OrganizedShoppingCartItem> childItems = null)
+			IList<OrganizedShoppingCartItem> childItems = null, decimal currentPrice = 0)
         {
 			Guard.NotNull(product, nameof(product));
 
@@ -850,7 +844,7 @@ namespace SmartStore.Services.Orders
             
             // standard properties
             if (getStandardWarnings)
-                warnings.AddRange(GetStandardWarnings(customer, shoppingCartType, product, selectedAttributes, customerEnteredPrice, quantity));
+                warnings.AddRange(GetStandardWarnings(customer, shoppingCartType, product, selectedAttributes, customerEnteredPrice, quantity, currentPrice));
 
             // selected attributes
             if (getAttributesWarnings)
@@ -1124,10 +1118,13 @@ namespace SmartStore.Services.Orders
 			}
 			else
 			{
-				// new shopping cart item
-				warnings.AddRange(
+                // new shopping cart item
+                var currentPrice = decimal.Zero;
+                if (ctx != null && ctx.CurrentPrice > 0)
+                    currentPrice = ctx.CurrentPrice;
+                warnings.AddRange(
 					GetShoppingCartItemWarnings(customer, cartType, product, storeId, selectedAttributes, customerEnteredPrice, quantity,
-						automaticallyAddRequiredProductsIfEnabled, bundleItem: bundleItem)
+						automaticallyAddRequiredProductsIfEnabled, bundleItem: bundleItem, currentPrice: currentPrice)
 				);
 
 				if (warnings.Count == 0)
@@ -1420,5 +1417,6 @@ namespace SmartStore.Services.Orders
         {
             return _priceFormatter.FormatPrice(GetCurrentCartSubTotal(cart));
         }
+        
     }
 }

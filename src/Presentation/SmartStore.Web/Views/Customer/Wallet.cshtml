@@ -1,0 +1,86 @@
+﻿@model SmartStore.Admin.Models.Agent.WalletModel
+@using Telerik.Web.Mvc.UI
+@{
+    Html.AddTitleParts(T("PageTitle.Account").Text);
+
+    Layout = "_MyAccount";
+    ViewBag.PageClassToken = "wallet";
+    ViewBag.PageTitle = T("Account.Wallet").Text;
+}
+<div class="alert alert-info">
+    @Model.WalletBalance
+</div>
+<fieldset class="content-group mt-4">
+    <legend class="mb-0"><span>@T("Wallet.History")</span></legend>
+    @if (Model.WalletBalance.Count() == 0)
+    {
+        <div class="alert alert-warning mt-3">
+            @T("Wallet.NoHistory")
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().CreatedOn)
+                        </th>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().OrderId)
+                        </th>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().AdminComment)
+                        </th>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().Reason)
+                        </th>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().TransType)
+                        </th>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().Amount)
+                        </th>
+                        <th class="border-top-0">
+                            @Html.DisplayNameFor(model => model.CustomerWallet.FirstOrDefault().AmountBalance)
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.CustomerWallet)
+                    {
+                        <tr>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.CreatedOn)
+                            </td>
+                            <td>
+                                <a href="/order/details/@item.OrderId">@item.OrderId</a>
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.AdminComment)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Reason)
+                            </td>
+                            <td class="@item.TransTypeString">
+                                @Html.DisplayFor(modelItem => item.TransTypeString)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.Amount)
+                            </td>
+                            <td>
+                                @Html.DisplayFor(modelItem => item.AmountBalance)
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</fieldset>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $('.DR').closest('tr').css("background-color", "#f0f5f5");
+    });
+</script>

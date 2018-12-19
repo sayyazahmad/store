@@ -175,7 +175,21 @@ namespace SmartStore.Admin.Models.Customers
         [SmartResourceDisplayName("Admin.Customers.Customers.RewardPoints.Fields.AddRewardPointsMessage")]
         [AllowHtml]
         public string AddRewardPointsMessage { get; set; }
-        
+
+        //wallet model
+        [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.TransType")]
+        public int TransType { get; set; }
+
+        [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.Amount")]
+        public decimal WalletAmount { get; set; }
+
+        [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.AdminComment")]
+        public string WalletAdminComment { get; set; }
+
+        [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.Message")]
+        [AllowHtml]
+        public string WalletMessage { get; set; }
+
         //send email model
         public SendEmailModel SendEmail { get; set; }
         //send PM model
@@ -286,7 +300,45 @@ namespace SmartStore.Admin.Models.Customers
             [SmartResourceDisplayName("Common.CreatedOn")]
             public DateTime CreatedOn { get; set; }
         }
+        public class WalletHistoryModel : EntityModelBase
+        {
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.OrderId")]
+            public int? OrderId { get; set; }
 
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.Amount")]
+            public decimal Amount { get; set; }
+
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.AmountBalance")]
+            public decimal AmountBalance { get; set; }
+
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.AdminComment")]
+            public string AdminComment { get; set; }
+
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.Reason")]
+            public string Reason { get; set; }
+
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.TransactionType")]
+            public int TransType{ get; set; }
+            
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.TransactionType")]
+            public string TransTypeString
+            {
+                get
+                {
+                    if (TransType == 50)
+                        return "CR";
+                    else
+                        return "DR";
+                }
+            }
+
+            [SmartResourceDisplayName("Admin.Customers.Customers.Wallet.Fields.Message")]
+            [AllowHtml]
+            public string Message { get; set; }
+
+            [SmartResourceDisplayName("Common.CreatedOn")]
+            public DateTime CreatedOn { get; set; }
+        }
         #endregion
     }
 

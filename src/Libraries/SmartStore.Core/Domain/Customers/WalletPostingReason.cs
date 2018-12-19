@@ -33,6 +33,28 @@
 		/// <summary>
 		/// The admin has debited the wallet, e.g. because the purchase of credit was cancelled.
 		/// </summary>
-		Debit
-	}
+		Debit,
+
+        /// <summary>
+        /// Commission amount on order placement
+        /// </summary>
+        Commission,
+            
+        /// <summary>
+        /// Profit amount on order placement
+        /// </summary>
+        Profit,
+            
+        /// <summary>
+        /// Withdraw Amount
+        /// </summary>
+        CommissionWithdrawl,
+        
+        /// <summary>
+        /// Withdraw Amount
+        /// </summary>
+        ProfitWithdrawl,
+
+        CommissionProfitReversal
+    }
 }

@@ -297,6 +297,11 @@ namespace SmartStore.Services.Customers
 			return customers.OrderBySequence(customerIds).ToList();
         }
 
+        public ICollection<WalletHistory> GetCustomerWallets(int customerId)
+        {
+            return _customerRepository.TableUntracked.SingleOrDefault(x => x.Id == customerId).WalletHistory;
+        }
+
 		public virtual IList<Customer> GetSystemAccountCustomers()
 		{
 			return _customerRepository.Table.Where(x => x.IsSystemAccount).ToList();

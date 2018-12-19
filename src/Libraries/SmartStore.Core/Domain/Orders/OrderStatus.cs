@@ -20,6 +20,10 @@ namespace SmartStore.Core.Domain.Orders
         /// <summary>
         /// Cancelled
         /// </summary>
-        Cancelled = 40
+        Cancelled = 40,
+        /// <summary>
+        /// Cancelled
+        /// </summary>
+        Dispatched = 50
     }
 }

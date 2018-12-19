@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Runtime.Serialization;
+using SmartStore.Core.Domain.Agent;
 using SmartStore.Core.Domain.Common;
 using SmartStore.Core.Domain.Forums;
 using SmartStore.Core.Domain.Orders;
@@ -31,6 +32,7 @@ namespace SmartStore.Core.Domain.Customers
         private ICollection<BankUpdateRequest> _bankUpdateRequests;
         private ICollection<CustomerMembership> _customerMemberships;
         private ICollection<CustomerPoints> _customerPoints;
+        private ICollection<CommissionRequest> _commissionRequests;
 
         /// <summary>
         /// Ctor
@@ -351,6 +353,12 @@ namespace SmartStore.Core.Domain.Customers
             get { return _customerMemberships ?? (_customerMemberships = new HashSet<CustomerMembership>()); }
             protected set { _customerMemberships = value; }
         }
+
+        public virtual ICollection<CommissionRequest> CommissionRequests
+        {
+            get { return _commissionRequests ?? (_commissionRequests = new HashSet<CommissionRequest>()); }
+            protected set { _commissionRequests = value; }
+        }
         #endregion
 
         #region Utils
@@ -410,6 +418,24 @@ namespace SmartStore.Core.Domain.Customers
 			return result;
 		}
 
+        public void AddWalletEntry(int storeId, int? orderId, decimal amount, int transType, string message, string adminComments, WalletPostingReason reason)
+        {
+            var balance = WalletHistory.Where(x => x.TransType == 50).Sum(x => x.Amount) - WalletHistory.Where(x => x.TransType == 40).Sum(x => x.Amount);
+            if (transType == 50)
+                balance += amount;
+            else
+                balance -= amount;
+
+            var entry = new WalletHistory
+            {
+                StoreId = storeId,
+                OrderId = orderId, Amount = amount, TransType = transType,
+                Message = message, AdminComment = adminComments,
+                CreatedOnUtc = DateTime.UtcNow, Reason = reason,
+                AmountBalance = balance
+            };
+            WalletHistory.Add(entry);
+        }
 		#endregion
 	}
 }

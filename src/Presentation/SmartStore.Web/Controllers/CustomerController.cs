@@ -9,8 +9,10 @@ using System.Web.Mvc;
 using Newtonsoft.Json.Linq;
 using SmartStore.Admin.Models.Agent;
 using SmartStore.Admin.Models.Common;
+using SmartStore.Admin.Models.Customers;
 using SmartStore.Collections;
 using SmartStore.Core;
+using SmartStore.Core.Domain.Agent;
 using SmartStore.Core.Domain.Common;
 using SmartStore.Core.Domain.Customers;
 using SmartStore.Core.Domain.Forums;
@@ -100,6 +102,7 @@ namespace SmartStore.Web.Controllers
         private readonly ExternalAuthenticationSettings _externalAuthenticationSettings;
 		private readonly PluginMediator _pluginMediator;
         private readonly IBankUpdateRequestService _bankUpdateRequestService;
+        private readonly IComissionService _comissionService;
         #endregion
 
         #region Ctor
@@ -134,7 +137,8 @@ namespace SmartStore.Web.Controllers
 			MediaSettings mediaSettings,
             LocalizationSettings localizationSettings,
             CaptchaSettings captchaSettings, ExternalAuthenticationSettings externalAuthenticationSettings,
-			PluginMediator pluginMediator, IBankUpdateRequestService bankUpdateRequestService)
+			PluginMediator pluginMediator, IBankUpdateRequestService bankUpdateRequestService,
+            IComissionService comissionService)
         {
             _services = services;
             _authenticationService = authenticationService;
@@ -180,6 +184,7 @@ namespace SmartStore.Web.Controllers
             _externalAuthenticationSettings = externalAuthenticationSettings;
 			_pluginMediator = pluginMediator;
             _bankUpdateRequestService = bankUpdateRequestService;
+            _comissionService = comissionService;
         }
 
         #endregion
@@ -735,11 +740,29 @@ namespace SmartStore.Web.Controllers
                             }
                         }
                     }
-
-                    // Login customer now
-                    if (isApproved)
-                        _authenticationService.SignIn(customer, true);
-
+                    MembershipPlan plan = null;
+                    if (!string.IsNullOrEmpty(model.MembershipPlan))
+                    {
+                        plan = _membershipPlanService.GetMembershipById(int.Parse(model.MembershipPlan));
+                    }
+                    if (plan != null && plan.Fee > 0)
+                    {
+                        var response = PayTabsPayPagaeRegistrationFeePayment(customer, plan.Fee);
+                        Uri uriResult;
+                        bool result = Uri.TryCreate(response, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
+                        if (result)
+                        {
+                            _authenticationService.SignIn(customer, true);
+                            return Redirect(response);
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("", $"Paytabs:{response}");
+                            customer.Active = false;
+                            ViewBag.MembershipPlans = _membershipPlanService.GetAll().Where(x => x.AvailableOnRegistration);
+                            return View(model);
+                        }
+                    }
                     // Associated with external account (if possible)
                     TryAssociateAccountWithExternalAccount(customer);
                     
@@ -776,24 +799,11 @@ namespace SmartStore.Web.Controllers
                         customer.BillingAddress = defaultAddress;
                         customer.ShippingAddress = defaultAddress;    
                     }
-                    MembershipPlan plan = null;
-                    if(!string.IsNullOrEmpty(model.MembershipPlan))
-                    {
-                        plan = _membershipPlanService.GetMembershipById(int.Parse(model.MembershipPlan));
-                    }
-                    if (plan != null && plan.Fee > 0)
-                    {
-                        var response = PayTabsPayPagaeRegistrationFeePayment(customer, plan.Fee);
-                        Uri uriResult;
-                        bool result = Uri.TryCreate(response, UriKind.Absolute, out uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
-                        if (result)
-                            return Redirect(response);
-                        else
-                        {
-                            ModelState.AddModelError("", response);
-                            return View(model);
-                        }
-                    }
+                    
+                    // Login customer now
+                    if (isApproved)
+                        _authenticationService.SignIn(customer, true);
+
                     _customerService.UpdateCustomer(customer);
                     if(model.StoreLogo != null)
                     {
@@ -873,7 +883,7 @@ namespace SmartStore.Web.Controllers
             model.IsAgentEnabled = _customerSettings.IsAgentEnabled;
             model.CheckUsernameAvailabilityEnabled = _customerSettings.CheckUsernameAvailabilityEnabled;
             model.DisplayCaptcha = _captchaSettings.Enabled && _captchaSettings.ShowOnRegistrationPage;
-
+            ViewBag.MembershipPlans = _membershipPlanService.GetAll().Where(x => x.AvailableOnRegistration);
             if (_customerSettings.CountryEnabled)
             {
                 model.AvailableCountries.Add(new SelectListItem() { Text = _localizationService.GetResource("Address.SelectCountry"), Value = "0" });
@@ -912,7 +922,8 @@ namespace SmartStore.Web.Controllers
             }
             else
             {
-                ModelState.AddModelError("", (string) data.result);
+                _authenticationService.SignOut();
+                NotifyError($"Paytabs:{(string) data.result})");
                 return RedirectToAction("Register");
             }
         }
@@ -921,7 +932,7 @@ namespace SmartStore.Web.Controllers
         {
             var store = _services.StoreService.GetStoreById(_storeContext.CurrentStore.Id);
             var settings = Services.Settings.LoadSetting<PayTabsPayPagePaymentSettings>();
-            var returnUrl = _webHelper.GetStoreLocation(store.SslEnabled) + "/VerifyPayment";
+            var returnUrl = _webHelper.GetStoreLocation(store.SslEnabled) + "customer/verifypayment";
 
             var builder = new StringBuilder();
             builder.Append($"merchant_email={settings.MerchantEmail}");
@@ -950,7 +961,7 @@ namespace SmartStore.Web.Controllers
             builder.Append($"&address_shipping={customer.ShippingAddress?.Address1} {customer.ShippingAddress?.Address2 ?? "bb"}");
             builder.Append($"&city_shipping={customer.ShippingAddress?.City ?? "city"}");
             builder.Append($"&state_shipping=ST");
-            builder.Append($"&postal_code_shipping={customer.ShippingAddress?.ZipPostalCode ?? ""}");
+            builder.Append($"&postal_code_shipping={customer.ShippingAddress?.ZipPostalCode ?? "00"}");
             builder.Append($"&country_shipping=SAU");
             builder.Append($"&other_charges=0");
             builder.Append($"&discount=0");
@@ -1246,18 +1257,28 @@ namespace SmartStore.Web.Controllers
 				Url = Url.Action("ChangePassword"),
 			});
 
-            //Comission
+            //Wallet
             if (customer.IsAgent())
             {
                 menu.Add(new MenuItem
                 {
-                    Id = "comission",
-                    Text = T("Account.Comission"),
+                    Id = "wallet",
+                    Text = T("Account.Wallet"),
                     Icon = "yen",
+                    Url = Url.Action("Wallet"),
+                });
+            }
+            //commission
+            if (customer.IsAgent())
+            {
+                menu.Add(new MenuItem
+                {
+                    Id = "commission",
+                    Text = T("Account.Commission"),
+                    Icon = "percent",
                     Url = Url.Action("Comission"),
                 });
             }
-
             //Upgrade
             if (customer.IsAgent())
             {
@@ -2320,9 +2341,45 @@ namespace SmartStore.Web.Controllers
             if (!IsCurrentUserRegistered() || !_workContext.CurrentCustomer.IsAgent)
                 return new HttpUnauthorizedResult();
             DashboardModel model = new DashboardModel();
+            var wallet = AgentWalletSummary();
             model.LastLogin = _workContext.CurrentCustomer.LastLoginDateUtc;
-            model.TotalPoints = 0;
-            model.TotalSales = 0;
+            model.TotalSales= _workContext.CurrentCustomer.Orders?.Where(x => x.OrderStatusId == (int) OrderStatus.Complete)?.Count();
+            model.TotalPoints = _workContext.CurrentCustomer.RewardPointsHistory?.OrderByDescending(x => x.CreatedOnUtc)?.FirstOrDefault()?.PointsBalance ?? 0;
+            model.WalletBalance = _workContext.CurrentCustomer.WalletHistory?.OrderByDescending(x => x.CreatedOnUtc)?.FirstOrDefault()?.AmountBalance ?? 0;
+            model.LifeTimeCommisison = wallet.LifeTimeCommisison;
+            model.LifeTimeProfit = wallet.LifeTimeProfit;
+            model.CurrentCommission = wallet.CurrentCommission;
+            model.CurrentProfit = wallet.CurrentProfit;
+            return View(model);
+        }
+
+        public ActionResult Wallet()
+        {
+            if (!IsCurrentUserRegistered() || !_workContext.CurrentCustomer.IsAgent)
+                return new HttpUnauthorizedResult();
+
+            WalletModel model = new WalletModel();
+            var wallets = _customerService.GetCustomerWallets(_workContext.CurrentCustomer.Id);
+
+            model.CustomerWallet = new List<CustomerModel.WalletHistoryModel>();
+
+            foreach (var wallet in wallets.OrderByDescending(rph => rph.CreatedOnUtc).ThenByDescending(rph => rph.Id))
+            {
+                model.CustomerWallet.Add(new CustomerModel.WalletHistoryModel()
+                {
+                    Id = wallet.Id,
+                    OrderId = wallet.OrderId,
+                    Amount = wallet.Amount,
+                    AmountBalance = wallet.AmountBalance,
+                    TransType = wallet.TransType,
+                    Reason = wallet.Reason.ToString(),
+                    AdminComment = wallet.AdminComment,
+                    Message = wallet.Message,
+                    CreatedOn = _dateTimeHelper.ConvertToUserTime(wallet.CreatedOnUtc, DateTimeKind.Utc)
+                });
+            }
+            var walletBalance = wallets.OrderByDescending(rph => rph.CreatedOnUtc).ThenByDescending(rph => rph.Id).FirstOrDefault()?.AmountBalance ?? 0;
+            model.WalletBalance = string.Format(_localizationService.GetResource("Wallet.CurrentBalance"), walletBalance.ToString("0.00"), _priceFormatter.FormatPrice(walletBalance, true, false));
             return View(model);
         }
 
@@ -2330,14 +2387,94 @@ namespace SmartStore.Web.Controllers
         {
             if (!IsCurrentUserRegistered() || !_workContext.CurrentCustomer.IsAgent)
                 return new HttpUnauthorizedResult();
+            var model = AgentWalletSummary();
+            model.Data = new List<ComissionViewModel>();
 
-            return View();
+            var orders = _orderService.GetOrders(_storeContext.CurrentStore.Id, _workContext.CurrentCustomer.Id, 
+                null, null, null, null, null, null, null)
+                ?.Where(x => x.OrderStatusId == (int)OrderStatus.Complete);
+            if(orders != null)
+            {
+                foreach (var item in orders)
+                {
+                    var com = ToComissionViewModel(item);
+                    if (com != null && (com.Commission > 0 || com.Profit> 0))
+                    {
+                        model.Data.Add(com);
+                    }
+                }
+            }
+            return View(model);
         }
+
         public ActionResult PaymentRequest()
         {
             if (!IsCurrentUserRegistered() || !_workContext.CurrentCustomer.IsAgent)
                 return new HttpUnauthorizedResult();
-            return View();
+            var requests = _comissionService.GetAllCustomerComissionRequests(_workContext.CurrentCustomer.Id);
+            List<CommissionRequestModel> model = new List<CommissionRequestModel>();
+            requests?.ToList()?.ForEach(x => {
+                model.Add(x.ToModel());
+            });
+            return View(model);
+        }
+
+        public ActionResult PaymentRequestAdd()
+        {
+            if (!IsCurrentUserRegistered() || !_workContext.CurrentCustomer.IsAgent)
+                return new HttpUnauthorizedResult();
+            
+            CommissionRequestModel model = new CommissionRequestModel();
+            model.CanRequestPayment = CanRequestPayment();
+            if (model.CanRequestPayment)
+            {
+                var walletSumary = AgentWalletSummary();
+                model.TotalCommission = walletSumary.LifeTimeCommisison;
+                model.TotalProfit = walletSumary.LifeTimeProfit;
+                model.AvailableCommission = walletSumary.CurrentCommission;
+                model.AvailableProfit = walletSumary.CurrentProfit;
+            }
+            return View(model);
+        }
+        
+        [HttpPost]
+        public ActionResult PaymentRequestAdd(CommissionRequestModel model)
+        {
+            if (!IsCurrentUserRegistered() || !_workContext.CurrentCustomer.IsAgent)
+                return new HttpUnauthorizedResult();
+
+            if (model.CommissionWithdrawAmount > model.AvailableCommissionOrg)
+                ModelState.AddModelError("", "Commission Withdraw Amount should be less than or equal to available amount.");
+            if (model.ProfitWithdrawAmount > model.AvailableProfitOrg)
+                ModelState.AddModelError("", "Commission Withdraw Amount should be less than or equal to available amount.");
+            if (model.TotalWithdrawAmount == 0)
+                ModelState.AddModelError("", "Withdraw Amount is not provided.");
+            
+            if (ModelState.IsValid)
+            {
+                CommissionRequest request = new CommissionRequest();
+                var wallet = AgentWalletSummary();
+                if (wallet != null)
+                {
+                    request.TotalCommission = wallet.LifeTimeCommisison;
+                    request.AvailableCommission = wallet.CurrentCommission;
+                    request.TotalProfit = wallet.LifeTimeProfit;
+                    request.AvailableProfit = wallet.CurrentProfit;
+                    request.CommissionWithdrawAmount = model.CommissionWithdrawAmount;
+                    request.ProfitWithdrawAmount = model.ProfitWithdrawAmount;
+                    request.CustomerId = _workContext.CurrentCustomer.Id;
+                    request.CreatedOnUtc = DateTime.UtcNow;
+                    request.RequestStatusId = 10;
+                    _comissionService.InsertCommissionRequest(request);
+                    return RedirectToAction("PaymentRequest");
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Commission Not Available");
+                }
+            }
+            model.CanRequestPayment = true;
+            return View(model);
         }
 
         public ActionResult Upgrade()
@@ -2404,6 +2541,27 @@ namespace SmartStore.Web.Controllers
             }
             return RedirectToAction("BankUpdateRequest");
         }
+        
+        public ComissionViewModel ToComissionViewModel(Order entity)
+        {
+            var wallets = _customerService.GetCustomerWallets(_workContext.CurrentCustomer.Id)?.Where(x => x.OrderId == entity.Id);
+            ComissionViewModel model = new ComissionViewModel();
+            model.CustomerId = entity.CustomerId;
+            model.OrderId = entity.Id;
+            model.CreatedOnUtc = entity.CreatedOnUtc;
+            model.PaymentMethod = entity.PaymentMethodSystemName;
+            model.OrderTotal = entity.OrderTotal;
+            if (entity.MembershipPlanId != null && entity.MembershipPlanId.Value > 0)
+                model.MembershipPlan = _membershipPlanService.GetById(entity.MembershipPlanId.Value).Title;
+
+            if (wallets != null && wallets.Count() > 0)
+            {
+                model.Commission = wallets.Where(x => x.Reason == WalletPostingReason.Commission)?.Sum(x => x.Amount);
+                model.Profit = wallets.Where(x => x.Reason == WalletPostingReason.Profit)?.Sum(x => x.Amount);
+                model.Remarks = wallets.Where(x => x.Reason == WalletPostingReason.Commission)?.FirstOrDefault()?.AdminComment;
+            }
+            return model;
+        }
 
         public ActionResult StoreLogo()
         {
@@ -2415,7 +2573,6 @@ namespace SmartStore.Web.Controllers
 
         private BankUpdateRequest ToEntity(BankUpdateRequestModel model)
         {
-            //return AutoMapper.Mapper.Map<BankUpdateRequest>(model);
             return new BankUpdateRequest { Id = model.Id, BankName = model.BankName, CustomerId = model.CustomerId, IBAN = model.IBAN, RequestStatusId = model.RequestStatusId};
         }
 
@@ -2431,6 +2588,43 @@ namespace SmartStore.Web.Controllers
             string path = Path.Combine(Server.MapPath("~/content/images"), fileName);
             image.SaveAs(path);
             return fileName;
+        }
+
+        private WalletModel AgentWalletSummary()
+        {
+            WalletModel model = new WalletModel();
+            var wallet = _customerService.GetCustomerById(_workContext.CurrentCustomer.Id).WalletHistory;
+
+            if (wallet != null && wallet.Count() > 0)
+            {
+                model.LifeTimeCommisison = wallet.Where(x => x.Reason == WalletPostingReason.Commission && x.TransType == 50).Sum(x => x.Amount);
+                model.LifeTimeProfit = wallet.Where(x => x.Reason == WalletPostingReason.Profit && x.TransType == 50).Sum(x => x.Amount)
+                    + wallet.Where(x => x.Reason == WalletPostingReason.Admin && x.TransType == 50).Sum(x => x.Amount);
+                model.CurrentCommission = wallet.Where(x => x.Reason == WalletPostingReason.Commission && x.TransType == 50).Sum(x => x.Amount)
+                    - wallet.Where(x => x.Reason == WalletPostingReason.CommissionWithdrawl && x.TransType == 40).Sum(x => x.Amount);
+                model.CurrentProfit = wallet.Where(x => x.Reason == WalletPostingReason.Profit && x.TransType == 50).Sum(x => x.Amount)
+                    + wallet.Where(x => x.Reason == WalletPostingReason.Admin && x.TransType == 50).Sum(x => x.Amount)
+                    - wallet.Where(x => x.Reason == WalletPostingReason.ProfitWithdrawl && x.TransType == 40).Sum(x => x.Amount)
+                    - wallet.Where(x => x.Reason == WalletPostingReason.Admin && x.TransType == 40).Sum(x => x.Amount);
+            }
+            return model;
+        }
+
+        private bool CanRequestPayment()
+        {
+            var memberShipPlan = _membershipPlanService.GetById(_workContext.CurrentCustomer.MembershipPlanId);
+            if(memberShipPlan != null && memberShipPlan.ComissionRequestResentDays > 0)
+            {
+                var existingRequests = _comissionService.GetAllCustomerComissionRequests(_workContext.CurrentCustomer.Id);
+                if(existingRequests != null)
+                {
+                    var lastRequestDate = existingRequests.OrderByDescending(x => x.CreatedOnUtc).FirstOrDefault().CreatedOnUtc;
+                    DateTime date = lastRequestDate.AddDays(memberShipPlan.ComissionRequestResentDays);
+                    if (date > DateTime.UtcNow)
+                        return false;
+                }
+            }
+            return true;
         }
         #endregion
     }

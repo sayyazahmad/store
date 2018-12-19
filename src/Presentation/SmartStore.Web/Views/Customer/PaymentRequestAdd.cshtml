@@ -1,0 +1,36 @@
+﻿@using SmartStore.Admin.Models.Agent;
+@model CommissionRequestModel
+@{
+    Html.AddTitleParts(T("PageTitle.Account").Text);
+    Layout = "_MyAccount";
+    ViewBag.PageClassToken = "commission-request";
+    ViewBag.PageTitle = T("Account.PaymentRequest.NewPaymentRequest").Text;
+}
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    if (!ViewData.ModelState.IsValid)
+    {
+        @Html.ValidationSummary(true, "", new { @class = "alert alert-danger" })
+    }
+    if (Model.CanRequestPayment)
+    {
+        Html.RenderPartial("_CreateOrUpdatePaymentRequest", Model);
+        <div class="form-group row">
+            <div class="col">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fa fa-check"></i>
+                    <span>@T("Common.Save")</span>
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="form-group row">
+            <div class="col">
+                <label style="color:red">@T("Account.PaymentRequest.CannotCreateAsResendDays")</label>
+            </div>
+        </div>
+    }
+}

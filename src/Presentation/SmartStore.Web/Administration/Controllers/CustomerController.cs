@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Web.Mvc;
 using Newtonsoft.Json;
+using SmartStore.Admin.Models.Agent;
 using SmartStore.Admin.Models.Common;
 using SmartStore.Admin.Models.Customers;
 using SmartStore.Admin.Models.ShoppingCart;
 using SmartStore.Core;
+using SmartStore.Core.Domain.Agent;
 using SmartStore.Core.Domain.Common;
 using SmartStore.Core.Domain.Customers;
 using SmartStore.Core.Domain.Directory;
@@ -89,6 +91,8 @@ namespace SmartStore.Admin.Controllers
 		private readonly IMessageModelProvider _messageModelProvider;
         private readonly IMembershipPlanService _membershipPlanService;
         private readonly IBankUpdateRequestService _bankUpdateRequestService;
+        private readonly IComissionService _comissionService;
+
         private readonly Lazy<IGdprTool> _gdprTool;
         #endregion
 
@@ -120,6 +124,7 @@ namespace SmartStore.Admin.Controllers
 			IAffiliateService affiliateService,
             IMembershipPlanService membershipPlanService,
             IBankUpdateRequestService bankUpdateRequestService,
+            IComissionService comissionService,
             IMessageModelProvider messageModelProvider,
 			Lazy<IGdprTool> gdprTool)
 		{
@@ -159,6 +164,7 @@ namespace SmartStore.Admin.Controllers
 			_affiliateService = affiliateService;
             _membershipPlanService = membershipPlanService;
             _bankUpdateRequestService = bankUpdateRequestService;
+            _comissionService = comissionService;
             _messageModelProvider = messageModelProvider;
 			_gdprTool = gdprTool;
 		}
@@ -1843,6 +1849,36 @@ namespace SmartStore.Admin.Controllers
             return RedirectToAction("BankUpdateRequest");
         }
 
+        public ActionResult CommissionRequest()
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            var requests = _comissionService.GetAllComissionRequests();
+            var model = requests.Select(x => ToCommissionModel(x));
+            return View(model);
+        }
+        
+        public ActionResult ApproveCommissionRequest(int id)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            if(UpdateCommissionRequestStatus(id, 20))
+                NotifySuccess(_localizationService.GetResource("Admin.Customers.Customers.Approved"));
+            return RedirectToAction("CommissionRequest");
+        }
+
+        public ActionResult RejectCommissionRequest(int id)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            UpdateCommissionRequestStatus(id, 30);
+            NotifySuccess(_localizationService.GetResource("Admin.Customers.Customers.Rejected"));
+            return RedirectToAction("CommissionRequest");
+        }
+
         private void UpdateRequestStatus(int id, int statusId)
         {
             _bankUpdateRequestService.UpdateBankUpdateRequestStatus(id, statusId);
@@ -1851,11 +1887,91 @@ namespace SmartStore.Admin.Controllers
         private BankUpdateRequestModel ToModel(BankUpdateRequest x)
         {
             var customer = _customerService.GetCustomerById(x.CustomerId);
-            return new BankUpdateRequestModel {
-                BankName = x.BankName, CustomerId = x.CustomerId,
-                Id = x.Id, IBAN = x.IBAN, CreatedOnUtc = x.CreatedOnUtc, RequestStatusId = x.RequestStatusId,
-                CustomerName = $"{customer.FirstName} {customer.LastName}", Status = GetStatus(x.RequestStatusId),
-                CurrentBankName = customer.BankName, CurrentIBAN = customer.IBAN
+            return new BankUpdateRequestModel
+            {
+                BankName = x.BankName,
+                CustomerId = x.CustomerId,
+                Id = x.Id,
+                IBAN = x.IBAN,
+                CreatedOnUtc = x.CreatedOnUtc,
+                RequestStatusId = x.RequestStatusId,
+                CustomerName = $"{customer.FirstName} {customer.LastName}",
+                Status = GetStatus(x.RequestStatusId),
+                CurrentBankName = customer.BankName,
+                CurrentIBAN = customer.IBAN
+            };
+        }
+
+        private bool UpdateCommissionRequestStatus(int id, int statusId)
+        {
+            if (statusId == 20)
+            {
+                var request = _comissionService.GetCommissionRequestById(id);
+                if (request != null && ValidatePaymentRequest(request))
+                {
+                    var customer = _customerService.GetCustomerById(request.CustomerId);
+                    if (request.CommissionWithdrawAmount.Value > 0)
+                        customer.AddWalletEntry(_storeContext.CurrentStore.Id, null, request.CommissionWithdrawAmount.Value, 40, "", $"Commission Amount withdrawal against request {id}", WalletPostingReason.CommissionWithdrawl);
+                    if (request.ProfitWithdrawAmount.Value > 0)
+                        customer.AddWalletEntry(_storeContext.CurrentStore.Id, null, request.ProfitWithdrawAmount.Value, 40, "", $"Profit Amount withdrawal against request {id}", WalletPostingReason.ProfitWithdrawl);
+                    _customerService.UpdateCustomer(customer);
+                    _comissionService.UpdateCommissionRequestStatus(id, statusId);
+                }
+                else
+                    return false;
+            }
+            else
+                _comissionService.UpdateCommissionRequestStatus(id, statusId);
+
+            return true;
+        }
+
+        private bool ValidatePaymentRequest(CommissionRequest request)
+        {
+            bool ret = true;
+            var com = GetCustomerWalletSummary(request.CustomerId);
+            if(request.CommissionWithdrawAmount > com.CurrentCommission)
+            {
+                NotifyError(_localizationService.GetResource("CommissionRequest.CommissionWithdrawAmount.ShouldLessThanAvailableAmount"));
+                ret = false;
+            }
+            if (request.ProfitWithdrawAmount > com.CurrentProfit)
+            {
+                NotifyError(_localizationService.GetResource("CommissionRequest.ProfitWithdrawAmount.ShouldLessThanAvailableAmount"));
+                ret  = false;
+            }
+            return ret;
+        }
+
+        private WalletModel GetCustomerWalletSummary(int customerId)
+        {
+            WalletModel model = new WalletModel();
+            var wallet = _customerService.GetCustomerById(customerId).WalletHistory;
+
+            if (wallet != null && wallet.Count() > 0)
+            {
+                model.LifeTimeCommisison = wallet.Where(x => x.Reason == WalletPostingReason.Commission && x.TransType == 50).Sum(x => x.Amount);
+                model.LifeTimeProfit = wallet.Where(x => x.Reason == WalletPostingReason.Profit && x.TransType == 50).Sum(x => x.Amount)
+                    + wallet.Where(x => x.Reason == WalletPostingReason.Admin && x.TransType == 50).Sum(x => x.Amount);
+                model.CurrentCommission = wallet.Where(x => x.Reason == WalletPostingReason.Commission && x.TransType == 50).Sum(x => x.Amount)
+                    - wallet.Where(x => x.Reason == WalletPostingReason.CommissionWithdrawl && x.TransType == 40).Sum(x => x.Amount);
+                model.CurrentProfit = wallet.Where(x => x.Reason == WalletPostingReason.Profit && x.TransType == 50).Sum(x => x.Amount)
+                    + wallet.Where(x => x.Reason == WalletPostingReason.Admin && x.TransType == 50).Sum(x => x.Amount)
+                    - wallet.Where(x => x.Reason == WalletPostingReason.ProfitWithdrawl && x.TransType == 40).Sum(x => x.Amount)
+                    - wallet.Where(x => x.Reason == WalletPostingReason.Admin && x.TransType == 40).Sum(x => x.Amount);
+            }
+            return model;
+        }
+
+        private CommissionRequestModel ToCommissionModel(CommissionRequest x)
+        {
+            var customer = _customerService.GetCustomerById(x.CustomerId);
+            return new CommissionRequestModel
+            {
+                CustomerName = $"{customer.FirstName} {customer.LastName}", CustomerId = x.CustomerId,
+                CommissionWithdrawAmount = x.CommissionWithdrawAmount, ProfitWithdrawAmount = x.ProfitWithdrawAmount,
+                Id = x.Id, TotalCommission = x.TotalCommission, AvailableCommission = x.AvailableCommission, TotalProfit = x.TotalProfit,
+                CreatedOnUtc = x.CreatedOnUtc, Note = x.Note, RequestStatusId = x.RequestStatusId, Status = GetStatus(x.RequestStatusId),
             };
         }
 
@@ -1863,6 +1979,63 @@ namespace SmartStore.Admin.Controllers
         {
             return ((RequestStatus) requestStatusId).ToString();
         }
+        #endregion
+
+        #region Reward points history
+
+        [GridAction]
+        public ActionResult WalletHistorySelect(int customerId)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            var walletHistory = _customerService.GetCustomerWallets(customerId);
+            if (walletHistory == null)
+                throw new ArgumentException("No wallet entry found with the specified customer");
+
+            var model = new List<CustomerModel.WalletHistoryModel>();
+            foreach (var wallet in walletHistory.OrderByDescending(rph => rph.CreatedOnUtc).ThenByDescending(rph => rph.Id))
+            {
+                model.Add(new CustomerModel.WalletHistoryModel()
+                {
+                    Id = wallet.Id,
+                    OrderId = wallet.OrderId,
+                    Amount = wallet.Amount,
+                    AmountBalance = wallet.AmountBalance,
+                    TransType = wallet.TransType,
+                    Reason = wallet.Reason.ToString(),
+                    AdminComment = wallet.AdminComment,
+                    Message = wallet.Message,
+                    CreatedOn = _dateTimeHelper.ConvertToUserTime(wallet.CreatedOnUtc, DateTimeKind.Utc)
+                });
+            }
+            var gridModel = new GridModel<CustomerModel.WalletHistoryModel>
+            {
+                Data = model,
+                Total = model.Count
+            };
+            return new JsonResult
+            {
+                Data = gridModel
+            };
+        }
+
+        [ValidateInput(false)]
+        public ActionResult WalletHistoryAdd(int transType, int customerId, decimal amount, string admincomment, string message)
+        {
+            if (!_permissionService.Authorize(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            var customer = _customerService.GetCustomerById(customerId);
+            if (customer == null)
+                return Json(new { Result = false }, JsonRequestBehavior.AllowGet);
+
+            customer.AddWalletEntry(_storeContext.CurrentStore.Id, null, amount, transType, message, admincomment, WalletPostingReason.Admin);
+            _customerService.UpdateCustomer(customer);
+
+            return Json(new { Result = true }, JsonRequestBehavior.AllowGet);
+        }
+        
         #endregion
     }
 }

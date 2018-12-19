@@ -2167,6 +2167,9 @@
     <Content Include="Views\Customer\Comission.cshtml" />
     <Content Include="Views\Customer\Upgrade.cshtml" />
     <Content Include="Views\Customer\Promotions.cshtml" />
+    <Content Include="Views\Customer\PaymentRequestAdd.cshtml" />
+    <Content Include="Views\Customer\Partials\_CreateOrUpdatePaymentRequest.cshtml" />
+    <Content Include="Views\Customer\Wallet.cshtml" />
     <None Include="Web.EFMigrations.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

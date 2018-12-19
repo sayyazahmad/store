@@ -1232,10 +1232,11 @@ namespace SmartStore.Web.Controllers
 			{
                 if (_services.WorkContext.CurrentCustomer.IsAgent)
                 {
-                    model.AddToCart.CustomerEnteredPrice = _taxService.GetProductPrice(product, product.Price, out var rate);
+                    if(model.AddToCart.CustomerEnteredPrice == 0)
+                        model.AddToCart.CustomerEnteredPrice = model.ProductPrice.PriceValue;//_taxService.GetProductPrice(product, product.Price, out var rate);
 
                     var minimumCustomerEnteredPrice = _currencyService.ConvertFromPrimaryStoreCurrency(model.AddToCart.CustomerEnteredPrice, currency);
-                    var maximumCustomerEnteredPrice = _currencyService.ConvertFromPrimaryStoreCurrency(model.AddToCart.CustomerEnteredPrice * 2, currency);
+                    var maximumCustomerEnteredPrice = _currencyService.ConvertFromPrimaryStoreCurrency(model.AddToCart.CustomerEnteredPrice * 4, currency);
 
                     model.AddToCart.CustomerEnteredPriceRange = string.Format(T("Products.EnterProductPrice.Range"),
                         _priceFormatter.FormatPrice(minimumCustomerEnteredPrice, true, false),

@@ -21,20 +21,20 @@
 		});
     });
 
-    function toggleOrderTotals(editmode) {
-        if (editmode) {
-            $('#trEditOrderTotals').show();
-            $('#btnEditOrderTotals').hide();
-            $('#btnSaveOrderTotals').show();
-            $('#btnCancelOrderTotals').show();
-        }
-        else {
-            $('#trEditOrderTotals').hide();
-            $('#btnEditOrderTotals').show();
-            $('#btnSaveOrderTotals').hide();
-            $('#btnCancelOrderTotals').hide();
-        }
-    }
+    //function toggleOrderTotals(editmode) {
+    //    if (editmode) {
+    //        $('#trEditOrderTotals').show();
+    //        $('#btnEditOrderTotals').hide();
+    //        $('#btnSaveOrderTotals').show();
+    //        $('#btnCancelOrderTotals').show();
+    //    }
+    //    else {
+    //        $('#trEditOrderTotals').hide();
+    //        $('#btnEditOrderTotals').show();
+    //        $('#btnSaveOrderTotals').hide();
+    //        $('#btnCancelOrderTotals').hide();
+    //    }
+    //}
 
     function toggleCC(editmode) {
 		if (editmode) {
@@ -91,7 +91,13 @@
 							<span>@T("Admin.Orders.Fields.OrderStatus.Cancel")</span>
 						</button>
 					}
-
+                    @if (Model.CanCompleteOrder && Model.OrderStatus != "Dispatched")
+					{
+						<button type="submit" name="dispatchorder" id="dispatchorder" class="btn btn-sm btn-primary ask-to-proceed" value="@T("Enums.SmartStore.Core.Domain.Orders.OrderStatus.Dispatch")">
+							<i class="fa fa-truck"></i>
+							<span>@T("Enums.SmartStore.Core.Domain.Orders.OrderStatus.Dispatch")</span>
+						</button>
+					}
 					@if (Model.CanCompleteOrder)
 					{
 						<button type="submit" name="completeorder" id="completeorder" class="btn btn-sm btn-warning ask-to-proceed" value="@T("Enums.SmartStore.Core.Domain.Orders.OrderStatus.Complete")">
@@ -521,7 +527,7 @@
 			</div>
 		</td>
 	</tr>
-	<tr>
+	@*<tr>
 		<td>
 			<button type="submit" name="btnEditOrderTotals" onclick="toggleOrderTotals(true);return false;" id="btnEditOrderTotals" class="btn btn-secondary">
 				<i class="fa fa-pencil-square-o"></i>
@@ -537,7 +543,7 @@
 
 			@{ Html.RenderWidget("admin_order_total_edit_buttons_after"); }
 		</td>
-	</tr>
+	</tr>*@
 
 	<tr class="adminSeparator">
 		<td colspan="2">

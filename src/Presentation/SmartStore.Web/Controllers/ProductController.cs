@@ -525,8 +525,15 @@ namespace SmartStore.Web.Controllers
 			{
 				int.TryParse(form[quantityKey], out quantity);
 			}
-
-			if (product.ProductType == ProductType.BundledProduct && product.BundlePerItemPricing)
+            // customer entered price.
+            string customPriceKey = form.AllKeys.FirstOrDefault(k => k.EndsWith("CustomerEnteredPrice"));
+            decimal customPrice = decimal.Zero;
+            if (customPriceKey.HasValue())
+            {
+                decimal.TryParse(form[customPriceKey], out customPrice);
+                m.AddToCart.CustomerEnteredPrice = customPrice;
+            }
+            if (product.ProductType == ProductType.BundledProduct && product.BundlePerItemPricing)
 			{
 				bundleItems = _productService.GetBundleItems(product.Id);
 				if (query.Variants.Count > 0)
@@ -637,12 +644,13 @@ namespace SmartStore.Web.Controllers
 				};
 			}
 
-			object data = new
-			{
-				Partials = partials,
-				DynamicThumblUrl = dynamicThumbUrl,
-				GalleryStartIndex = galleryStartIndex,
-				GalleryHtml = galleryHtml
+            object data = new
+            {
+                Partials = partials,
+                DynamicThumblUrl = dynamicThumbUrl,
+                GalleryStartIndex = galleryStartIndex,
+                GalleryHtml = galleryHtml,
+                Price = m.AddToCart.CustomerEnteredPrice
 			};
 
 			return new JsonResult { Data = data };

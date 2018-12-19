@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
+using SmartStore.Admin.Models.Agent;
 using SmartStore.ComponentModel;
+using SmartStore.Core.Domain.Agent;
 using SmartStore.Core.Domain.Catalog;
 using SmartStore.Core.Domain.Common;
 using SmartStore.Core.Domain.Directory;
@@ -185,6 +187,58 @@ namespace SmartStore.Web
             destination.FaxNumber = model.FaxNumber;
 
             return destination;
+        }
+
+        public static CommissionRequest ToEntity(this CommissionRequestModel model)
+        {
+            if (model == null)
+                return null;
+
+            var entity = new CommissionRequest();
+            return ToEntity(model, entity);
+        }
+
+        public static CommissionRequest ToEntity(this CommissionRequestModel model, CommissionRequest destination)
+        {
+            if (model == null)
+                return destination;
+
+            destination.Id = model.Id;
+            destination.CustomerId = model.CustomerId;
+            destination.TotalCommission = model.TotalCommission;
+            destination.AvailableCommission = model.AvailableCommission;
+            destination.TotalProfit = model.TotalProfit;
+            destination.AvailableProfit = model.AvailableProfit;
+            destination.CommissionWithdrawAmount = model.CommissionWithdrawAmount;
+            destination.ProfitWithdrawAmount = model.ProfitWithdrawAmount;
+            destination.RequestStatusId = model.RequestStatusId;
+            destination.Note = model.Note;
+            destination.CreatedOnUtc = model.CreatedOnUtc;
+            destination.UpdatedOnUtc = model.UpdatedOnUtc;
+
+            return destination;
+        }
+
+        public static CommissionRequestModel ToModel(this CommissionRequest entity)
+        {
+            if (entity == null)
+                return null;
+
+            var model = new CommissionRequestModel
+            {
+                Id = entity.Id,
+                CustomerId = entity.CustomerId,
+                TotalCommission = entity.TotalCommission,
+                AvailableCommission = entity.AvailableCommission,
+                TotalProfit = entity.TotalProfit,
+                AvailableProfit = entity.AvailableProfit,
+                CommissionWithdrawAmount = entity.CommissionWithdrawAmount,
+                ProfitWithdrawAmount = entity.ProfitWithdrawAmount,
+                Note = entity.Note,
+                CreatedOnUtc = entity.CreatedOnUtc,
+                RequestStatusId = entity.RequestStatusId
+            };
+            return model;
         }
     }
 }

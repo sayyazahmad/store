@@ -19,26 +19,31 @@
 		    this.createGallery(opts.galleryStartIndex);
 			
 			// Update product data and gallery
-			$(el).on('change', ':input', function (e) {
-				var ctx = $(this).closest('.update-container');
+            $(el).on('change', ':input', function (e) {
+                
+                var ctx = $(this).closest('.update-container');
 				var isTouchSpin = $(this).parent(".bootstrap-touchspin").length > 0;
 				
 		    	if (ctx.length == 0) {
 		    		// associated or bundled item
 		    		ctx = el;
 		    	}
-
+                
 		    	ctx.doAjax({
 		    		data: ctx.find(':input').serialize(),
 		    		callbackSuccess: function (response) {
 						self.updateDetailData(response, ctx, isTouchSpin);
-
+                        //alert(response.Price);
+                        console.log(response);
+                        $('input[id*="CustomerEnteredPrice"]').val(response.Price);
 		    			if (ctx.hasClass('pd-bundle-item')) {
 		    				// update bundle price too
 		    				$('#main-update-container').doAjax({
 		    					data: $('.pd-bundle-items').find(':input').serialize(),
-		    					callbackSuccess: function (response2) {
-									self.updateDetailData(response2, $('#main-update-container'), isTouchSpin);
+                                callbackSuccess: function (response2) {
+                                    
+                                    self.updateDetailData(response2, $('#main-update-container'), isTouchSpin);
+                                    
 		    					}
 		    				});
 		    			}

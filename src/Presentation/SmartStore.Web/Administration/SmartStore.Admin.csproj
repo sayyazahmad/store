@@ -249,7 +249,10 @@
     <Compile Include="MappingExtensions.cs" />
     <Compile Include="Infrastructure\AdminStartupTask.cs" />
     <Compile Include="Infrastructure\AutoMapperAdminProfile.cs" />
+    <Compile Include="Models\Agent\CommissionRequestModel.cs" />
     <Compile Include="Models\Agent\DashboardModel.cs" />
+    <Compile Include="Models\Agent\WalletModel.cs" />
+    <Compile Include="Models\Agent\ComissionViewModel.cs" />
     <Compile Include="Models\Common\BankUpdateRequestModel.cs" />
     <Compile Include="Models\Catalog\CategoryTreeModel.cs" />
     <Compile Include="Models\Catalog\ProductAttributeOptionModel.cs" />
@@ -611,6 +614,7 @@
     <Content Include="Views\MembershipPlan\Edit.cshtml" />
     <Content Include="Views\Store\BannerImages.cshtml" />
     <Content Include="Views\Customer\BankUpdateRequest.cshtml" />
+    <Content Include="Views\Customer\CommissionRequest.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Category\Create.cshtml" />
@@ -1191,7 +1195,9 @@
   <ItemGroup>
     <Content Include="Views\Product\_CreateOrUpdateProductTag.cshtml" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="Models\Comission\" />
+  </ItemGroup>
   <ItemGroup>
     <Content Include="Views\DeliveryTime\List.cshtml" />
   </ItemGroup>

@@ -1,8 +1,100 @@
-﻿
+﻿@model SmartStore.Admin.Models.Agent.WalletModel
+@using Telerik.Web.Mvc.UI
 @{
     Html.AddTitleParts(T("PageTitle.Account").Text);
 
     Layout = "_MyAccount";
     ViewBag.PageClassToken = "comission";
     ViewBag.PageTitle = T("Account.Comission").Text;
+}
+<div class="card-deck card-cols-sm-1 card-cols-lg-3">
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.TotalLifeTime)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.TotalLifeTime.ToString("0.00")</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.TotalCurrent)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.TotalCurrent.ToString("0.00")</label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@if (Model.Data.Count() == 0)
+{
+    <div class="alert alert-warning mt-3">
+        @T("Commission.NotFound")
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().OrderId)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().CreatedOnUtc)
+                    </th>
+                    @*<th>
+                            @Html.DisplayNameFor(model => model.Data.FirstOrDefault().PaymentType)
+                        </th>*@
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().OrderTotal)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().CommissionPlusProfit)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().MembershipPlan)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().Remarks)
+                    </th>
+                    <th>
+                        @Html.DisplayNameFor(model => model.Data.FirstOrDefault().PaymentMethod)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Data)
+                {
+                    <tr>
+                        <td>
+                            <a href="/order/details/@item.OrderId">@item.OrderId</a>
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.CreatedOnUtc)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.OrderTotal)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.CommissionPlusProfit)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.MembershipPlan)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.Remarks)
+                        </td>
+                        <td>
+                            @Html.DisplayFor(modelItem => item.PaymentMethod)
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }

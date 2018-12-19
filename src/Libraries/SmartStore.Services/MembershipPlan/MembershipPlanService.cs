@@ -53,5 +53,11 @@ namespace SmartStore.Services.MembershipPlan
 
             return customers;
         }
+
+        public Core.Domain.Membership.MembershipPlan GetById(int id)
+        {
+            var membershipPlan = _membershipPlanRepository.GetById(id);
+            return membershipPlan;
+        }
     }
 }

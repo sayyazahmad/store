@@ -35,14 +35,36 @@
             </div>
         </div>
     </div>
-    @*<div class="card card-shadow address-list-item">
+    <div class="card card-shadow address-list-item">
         <div class="card-body">
-            <h4 class="card-title">@Html.LabelFor(m => m.LastLogin)</h4>
+            <h4 class="card-title">@Html.LabelFor(m => m.WalletBalance)</h4>
             <div class="mb-2">
                 <div class="email">
-                    <label class="m-0">@Model.LastLogin</label>
+                    <label class="m-0">@Model.WalletBalance.Value.ToString("0.00")</label>
                 </div>
             </div>
         </div>
-    </div>*@
+    </div>
+</div>
+<div class="card-deck card-cols-sm-1 card-cols-lg-3">
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.TotalLifeTime)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.TotalLifeTime.ToString("0.00")</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card card-shadow address-list-item">
+        <div class="card-body">
+            <h4 class="card-title">@Html.LabelFor(m => m.TotalCurrent)</h4>
+            <div class="mb-2">
+                <div class="email">
+                    <label class="m-0">@Model.TotalCurrent.ToString("0.00")</label>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

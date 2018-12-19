@@ -426,6 +426,17 @@ namespace SmartStore.Services.Orders
                     }
                 }
             }
+
+            if (order.OrderStatus == OrderStatus.Dispatched)
+            {
+                if (order.PaymentStatus == PaymentStatus.Paid)
+                {
+                    if (order.ShippingStatus == ShippingStatus.ShippingNotRequired || order.ShippingStatus == ShippingStatus.Delivered)
+                    {
+                        SetOrderStatus(order, OrderStatus.Dispatched, true);
+                    }
+                }
+            }
         }
 
         #endregion
@@ -1025,7 +1036,8 @@ namespace SmartStore.Services.Orders
                             ShippingMethod = shippingMethodName,
                             ShippingRateComputationMethodSystemName = shippingRateComputationMethodSystemName,
                             VatNumber = vatNumber,
-                            CustomerOrderComment = extraData.ContainsKey("CustomerComment") ? extraData["CustomerComment"] : ""
+                            CustomerOrderComment = extraData.ContainsKey("CustomerComment") ? extraData["CustomerComment"] : "",
+                            MembershipPlanId = customer.MembershipPlanId
                         };
 
 						if (extraData.ContainsKey("AcceptThirdPartyEmailHandOver") && _shoppingCartSettings.ThirdPartyEmailHandOver != CheckoutThirdPartyEmailHandOver.None)
@@ -1149,32 +1161,8 @@ namespace SmartStore.Services.Orders
                                         _giftCardService.InsertGiftCard(gc);
                                     }
                                 }
-                                
-                                //Commission
-                                if (customer.IsAgent)
-                                {
-                                    var membership = _membershipPlanService.GetMembershipById(customer.MembershipPlanId);
-                                    if(membership != null && membership.ComissionPct > 0)
-                                    {
-                                        var comission = new Comission
-                                        {
-                                            OrderId = order.Id,
-                                            CustomerId = customer.Id,
-                                            ProductId = sc.Item.ProductId,
-                                            ComissionAmt = (membership.ComissionPct * order.OrderItems.Sum(x => x.ProductCost) / 100),
-                                            ComissionPaid = false,
-                                            Point = (membership.EarnPoint * order.OrderItems.Sum(x => x.ProductCost) / 100),
-                                            Remarks = "",
-                                            CreatedOnUtc = DateTime.UtcNow,
-                                            UpdatedOnUtc = DateTime.UtcNow
-                                        };
-                                        _comissionService.InsertComission(comission);
-                                    }
-                                }
-
 								_productService.AdjustInventory(sc, true);
                             }
-
 							// Clear shopping cart
 							if (!processPaymentRequest.IsMultiOrder)
 							{
@@ -1766,6 +1754,8 @@ namespace SmartStore.Services.Orders
 			{
 				_productService.AdjustInventory(orderItem, false, orderItem.Quantity);
 			}
+            ////Commission
+            ReverseCommisionProfiWallet(order);
         }
 
 		/// <summary>
@@ -1902,25 +1892,90 @@ namespace SmartStore.Services.Orders
 		/// </summary>
 		/// <param name="order">Order</param>
 		public virtual void CompleteOrder(Order order)
-		{
+        {
             if (!CanCompleteOrder(order))
                 throw new SmartException(T("Order.CannotMarkCompleted"));
 
-			if (CanMarkOrderAsPaid(order))
-			{
-				MarkOrderAsPaid(order);
-			}
+            if (CanMarkOrderAsPaid(order))
+            {
+                MarkOrderAsPaid(order);
+            }
 
-			if (order.ShippingStatus != ShippingStatus.ShippingNotRequired)
-			{
-				order.ShippingStatusId = (int)ShippingStatus.Delivered;
-			}
+            if (order.ShippingStatus != ShippingStatus.ShippingNotRequired)
+            {
+                order.ShippingStatusId = (int)ShippingStatus.Delivered;
+            }
 
-			_orderService.UpdateOrder(order);
+            _orderService.UpdateOrder(order);
 
-			CheckOrderStatus(order);
-		}
+            ////Commission
+            CommisionProfiWallet(order);
+            CheckOrderStatus(order);
+        }
 
+        private void CommisionProfiWallet(Order order)
+        {
+            if (order.Customer.IsAgent)
+            {
+                var membership = _membershipPlanService.GetMembershipById(order.Customer.MembershipPlanId);
+
+                if (membership != null && membership.ComissionPct > 0)
+                {
+                    var commissionAmt = (membership.ComissionPct * order.OrderItems.Sum(x => x.ProductCost) / 100);
+                    var profitAmt = order.OrderTotal - order.OrderItems.Sum(x => x.ProductCost);
+                    if (commissionAmt > 0)
+                    {
+                        order.Customer.AddWalletEntry(order.StoreId, order.Id, commissionAmt, 50, "", $"Comission on order# {order.Id}", WalletPostingReason.Commission);
+                        _customerService.UpdateCustomer(order.Customer);
+                    }
+                    if (profitAmt > 0)
+                    {
+                        order.Customer.AddWalletEntry(order.StoreId, order.Id, profitAmt, 50, "", $"Profit on order# {order.Id}", WalletPostingReason.Profit);
+                        _customerService.UpdateCustomer(order.Customer);
+                    }
+                }
+            }
+        }
+
+        private void ReverseCommisionProfiWallet(Order order)
+        {
+            if (order.Customer.IsAgent)
+            {
+                var wlt = _customerService.GetCustomerById(order.CustomerId).WalletHistory;
+                var wallets = wlt?.Where(x => x.OrderId == order.Id);
+                if (wallets != null && wallets.Count() > 0)
+                {
+                    wallets.ToList().ForEach(x => {
+                        if (x.Amount > 0)
+                            order.Customer.AddWalletEntry(order.StoreId, order.Id, x.Amount, 40, "", $"Reversal entry on cancellation of order# {order.Id}", WalletPostingReason.CommissionProfitReversal);
+                    });
+                    _customerService.UpdateCustomer(order.Customer);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Marks the order as dispatched
+        /// </summary>
+        /// <param name="order">Order</param>
+        public virtual void DispatchOrder(Order order)
+        {
+            if (!CanCompleteOrder(order))
+                throw new SmartException(T("Order.CannotMarkCompleted"));
+
+            //if (CanMarkOrderAsPaid(order))
+            //{
+            //    MarkOrderAsPaid(order);
+            //}
+
+            if (order.ShippingStatus != ShippingStatus.ShippingNotRequired)
+            {
+                order.ShippingStatusId = (int)ShippingStatus.Delivered;
+            }
+            order.OrderStatusId = (int)OrderStatus.Dispatched;
+            _orderService.UpdateOrder(order);
+            CheckOrderStatus(order);
+        }
 
         /// <summary>
         /// Gets a value indicating whether capture from admin panel is allowed

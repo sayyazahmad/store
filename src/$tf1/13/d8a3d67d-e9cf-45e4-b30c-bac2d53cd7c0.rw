@@ -1,3 +1,0 @@
-﻿@{
-    Layout = "~/Administration/Views/Shared/Layouts/_AdminLayout.cshtml";
-}

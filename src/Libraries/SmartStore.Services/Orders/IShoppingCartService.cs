@@ -88,7 +88,8 @@ namespace SmartStore.Services.Orders
 			Product product, 
 			string selectedAttributes,
             decimal customerEnteredPrice, 
-			int quantity);
+			int quantity,
+            decimal currentPrice = 0);
 
 		/// <summary>
 		/// Validates shopping cart item attributes
@@ -162,7 +163,7 @@ namespace SmartStore.Services.Orders
 			bool getRequiredProductWarnings = true,
 			bool getBundleWarnings = true, 
 			ProductBundleItem bundleItem = null, 
-			IList<OrganizedShoppingCartItem> childItems = null);
+			IList<OrganizedShoppingCartItem> childItems = null, decimal currentPrice = 0);
 
         /// <summary>
         /// Validates whether this shopping cart is valid

@@ -135,6 +135,7 @@
     <Compile Include="Caching\SingletonQueries.cs" />
     <Compile Include="Extensions\DbEntityEntryExtensions.cs" />
     <Compile Include="Extensions\ExceptionExtensions.cs" />
+    <Compile Include="Mapping\Agent\CommissioinRequestMap.cs" />
     <Compile Include="Mapping\Catalog\ProductAttributeOptionMap.cs" />
     <Compile Include="Mapping\Catalog\ProductAttributeOptionsSetMap.cs" />
     <Compile Include="Mapping\Common\BankUpdateRequestMap.cs" />

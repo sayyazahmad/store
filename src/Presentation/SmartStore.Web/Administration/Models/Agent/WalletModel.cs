@@ -1,23 +1,11 @@
-﻿using SmartStore.Web.Framework;
-using SmartStore.Web.Framework.Modelling;
-using System;
+﻿using SmartStore.Admin.Models.Customers;
+using SmartStore.Web.Framework;
+using System.Collections.Generic;
 
 namespace SmartStore.Admin.Models.Agent
 {
-    public class DashboardModel : EntityModelBase
+    public class WalletModel
     {
-        [SmartResourceDisplayName("Admin.Agent.Dashboard.LastLogin")]
-        public DateTime? LastLogin { get; set; }
-
-        [SmartResourceDisplayName("Admin.Agent.Dashboard.TotalSales")]
-        public int? TotalSales { get; set; }
-
-        [SmartResourceDisplayName("Admin.Agent.Dashboard.TotalPoints")]
-        public int? TotalPoints { get; set; }
-
-        [SmartResourceDisplayName("Admin.Agent.Dashboard.WalletBalance")]
-        public decimal? WalletBalance { get; set; }
-
         [SmartResourceDisplayName("Admin.Agent.Wallet.LifeTimeCommisison ")]
         public decimal LifeTimeCommisison { get; set; }
 
@@ -35,5 +23,9 @@ namespace SmartStore.Admin.Models.Agent
 
         [SmartResourceDisplayName("Admin.Agent.Wallet.Total")]
         public decimal TotalCurrent { get { return CurrentCommission + CurrentProfit; } }
+        public List<ComissionViewModel> Data { get; set; }
+        public List<CustomerModel.WalletHistoryModel> CustomerWallet { get; set; }
+
+        public string WalletBalance { get; set; }
     }
 }

@@ -475,14 +475,20 @@ namespace SmartStore.Core.Domain.Orders
 		[DataMember]
 		public bool AcceptThirdPartyEmailHandOver { get; set; }
 
-		#endregion
-
-		#region Navigation properties
-
-		/// <summary>
-		/// Gets or sets the customer
+        /// <summary>
+		/// MembershipPlan of agent
 		/// </summary>
 		[DataMember]
+        public int? MembershipPlanId { get; set; }
+
+        #endregion
+
+        #region Navigation properties
+
+        /// <summary>
+        /// Gets or sets the customer
+        /// </summary>
+        [DataMember]
         public virtual Customer Customer { get; set; }
 
         /// <summary>

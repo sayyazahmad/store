@@ -1,3 +1,0 @@
-﻿@{
-    Layout = "~/Areas/Agent/Views/Shared/_Layout.cshtml";
-}

@@ -87,6 +87,7 @@
 						@if (!priceModel.CallForPrice && !isBundleItem)
 						{
 							<meta itemprop="price" content="@currentPriceValue.ToString("F", CultureInfo.InvariantCulture)" />
+                            <input name="current-price" type="text" style="visibility:collapse;width:0px" value="@currentPriceValue"/>
 						}
 
                         <span class="@badgeClasses">

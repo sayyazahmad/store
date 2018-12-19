@@ -70,5 +70,10 @@ namespace SmartStore.Core.Domain.Customers
 		/// Gets or sets the order for which the wallet entry was used.
 		/// </summary>
 		public virtual Order Order { get; set; }
-	}
+
+        /// <summary>
+        /// Gets or sets the type of transaction, cr - dr.
+        /// </summary>
+        public int TransType { get; set; }
+    }
 }

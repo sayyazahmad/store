@@ -53,6 +53,13 @@ namespace SmartStore.Services.Customers
         Customer GetCustomerById(int customerId);
 
         /// <summary>
+        /// Gets a customer
+        /// </summary>
+        /// <param name="customerId">Customer identifier</param>
+        /// <returns>A customer</returns>
+        ICollection<WalletHistory> GetCustomerWallets(int customerId);
+
+        /// <summary>
         /// Get customers by identifiers
         /// </summary>
         /// <param name="customerIds">Customer identifiers</param>
@@ -211,6 +218,6 @@ namespace SmartStore.Services.Customers
 		/// <returns>Reward points histories</returns>
 		Multimap<int, RewardPointsHistory> GetRewardPointsHistoriesByCustomerIds(int[] customerIds);
 
-		#endregion Reward points
-	}
+        #endregion Reward points
+    }
 }

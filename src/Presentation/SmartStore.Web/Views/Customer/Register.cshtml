@@ -70,7 +70,7 @@
                                     <select name="MembershipPlan" id="MembershipPlan" class="select2-selection__rendered">
                                         @foreach (var item in ViewBag.MembershipPlans)
                                         {
-                                            <option value="@item.Id" fee="@item.Fee">@item.Title</option>
+                                            <option value="@item.Id" fee="@item.Fee" @(item.Id.ToString() == Model.MembershipPlan ? "selected" : "") >@item.Title</option>
                                         }
                                     </select>
                                     @*@Html.DropDownListFor(model => model.MembershipPlan, new SelectList(ViewBag.MembershipPlans, "Id", "Title"), new { @class = "form-control" })*@
@@ -288,15 +288,24 @@
             $('#agent-fields').hide();
         }
     }
-
-    showAgentFields(false);
+    if ($('#rdoagent').val() === "True")
+        showAgentFields(true);
+    else
+        showAgentFields(false);
 
     $('#MembershipPlan').on('change', function () {
-        var fee = Math.round($('option:selected', this).attr('fee'));
-        if (fee > 0) {
-            $('#register-button').html('Pay ' + fee + ' and ' + $('#register-button').html());
-        }
+        showPayment(); 
     });
+
+    function showPayment() {
+        var fee = Math.round($('option:selected', $('#MembershipPlan')).attr('fee'));
+        if (fee > 0) {
+            $('#register-button').html('@T("Account.Register.Pay") ' + fee + ' & @T("Account.Register.Button")');
+        }
+        else {
+            $('#register-button').html('@T("Account.Register.Button")');
+        }
+    }
 
     function readURL(input) {
         if (input.files && input.files[0]) {
@@ -312,4 +321,6 @@
     $("#StoreLogo").change(function () {
         readURL(this);
     });
+
+    showPayment();
 </script>
